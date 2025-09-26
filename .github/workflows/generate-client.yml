@@ -51,8 +51,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: generated-client-code
-      - name: Checkout repository
-        uses: actions/checkout@v4
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
