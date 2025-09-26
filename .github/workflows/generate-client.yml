@@ -59,6 +59,11 @@ jobs:
       - name: Package client using Maven
         run: |
           mvn clean package
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-client-jar
+          path: target/*.jar
 
   deploy-client:
     needs: package-client
