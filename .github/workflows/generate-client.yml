@@ -13,6 +13,7 @@ jobs:
       openapi_spec_path: ${{ steps.set-vars.outputs.openapi_spec_path }}
       generator_version: ${{ steps.set-vars.outputs.generator_version }}
       output_dir: ${{ steps.set-vars.outputs.output_dir }}
+      template-dir: ${{ steps.set-vars.outputs.template_dir }}
     steps:
       - name: Set up workflow variables
         id: set-vars
@@ -20,6 +21,7 @@ jobs:
           echo "openapi_spec_path=openapi.yaml" >> $GITHUB_OUTPUT
           echo "generator_version=7.15.0" >> $GITHUB_OUTPUT
           echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
+          echo "template_dir=supporting-files/generator-templates/java/jersey3" >> $GITHUB_OUTPUT
 
   generate-client:
     needs: set-variables
@@ -33,8 +35,7 @@ jobs:
             openapitools/openapi-generator-cli:v${{ needs.set-variables.outputs.generator_version }} \
             generate \
             -i /local/${{ needs.set-variables.outputs.openapi_spec_path }} \
-            -g java \
-            --library jersey3 \
+            -c /local/${{ needs.set-variables.outputs.template-dir }} \
             -o /local/${{ needs.set-variables.outputs.output_dir }} \
             --additional-properties=useJakartaEe=true
       - name: Upload generated client code

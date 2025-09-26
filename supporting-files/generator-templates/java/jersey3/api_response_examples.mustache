@@ -1,0 +1,125 @@
+{{>licenseInfo}}
+package {{package}};
+
+import {{invokerPackage}}.ApiClient;
+import {{invokerPackage}}.ApiException;
+import {{invokerPackage}}.ApiResponse;
+import {{invokerPackage}}.Configuration;
+import {{invokerPackage}}.Pair;
+
+{{#imports}}
+    import {{import}};
+{{/imports}}
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+{{#useBeanValidation}}
+    import {{javaxPackage}}.validation.constraints.*;
+    import {{javaxPackage}}.validation.Valid;
+
+{{/useBeanValidation}}
+{{#hasFormParamsInSpec}}
+    import org.apache.http.HttpEntity;
+    import org.apache.http.NameValuePair;
+    import org.apache.http.entity.mime.MultipartEntityBuilder;
+    import org.apache.http.message.BasicNameValuePair;
+    import org.apache.http.client.entity.UrlEncodedFormEntity;
+
+{{/hasFormParamsInSpec}}
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.http.HttpRequest;
+import java.nio.channels.Channels;
+import java.nio.channels.Pipe;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+
+import java.util.*;
+import lombok.Getter;
+import lombok.SneakyThrows;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.*;
+import org.springframework.stereotype.Component;
+
+{{>generatedAnnotation}}
+
+{{#operations}}
+    @Component("{{#lambda.camelcase}}{{artifactId}}{{/lambda.camelcase}}{{classname}}ResponseExamples")
+    public class {{classname}}ResponseExamples {
+
+    //default headers
+    public static final HashMap<String, List<String>> DEFAULT_HEADERS = new HashMap<>() {
+        {
+            put("Content-Type", Collections.singletonList("application/json"));
+            put("Accept", Collections.singletonList("application/json"));
+            put("X-Source-System", Collections.singletonList("eu-nl-{{classname}}"));
+            put("X-Author-Id", Collections.singletonList("eu-nl-{{classname}}"));
+            put("X-Correlation-Id", Collections.singletonList("{{classname}}-correlation-id"));
+        }
+    };
+
+    //examples
+    {{#operation}}
+        {{#returnType}}
+            {{#isArray}}
+                public final List<{{{returnBaseType}}}> {{operationId}}ResponseExample;
+            {{/isArray}}
+            {{^isArray}}
+                public final {{{returnType}}} {{operationId}}ResponseExample;
+            {{/isArray}}
+        {{/returnType}}
+    {{/operation}}
+
+    //constructor
+    @SneakyThrows
+    public {{classname}}ResponseExamples(ObjectMapper objectMapper) {
+    {{#operation}}
+        {{#returnType}}
+            {{#isArray}}
+                var {{operationId}}ResponseExampleArray = objectMapper.readValue("""
+                {{{examples.0.example}}}
+                """, {{{returnBaseType}}}[].class);
+                {{operationId}}ResponseExample = Arrays.stream({{operationId}}ResponseExampleArray).toList();
+            {{/isArray}}
+            {{^isArray}}
+                {{#returnTypeIsPrimitive}}
+                    {{#returnProperty.isBoolean}}
+                        {{operationId}}ResponseExample = true;
+                    {{/returnProperty.isBoolean}}
+                    {{#returnProperty.isString}}
+                        {{operationId}}ResponseExample = "someString";
+                    {{/returnProperty.isString}}
+                {{/returnTypeIsPrimitive}}
+                {{^returnTypeIsPrimitive}}
+                    {{#returnProperty.isDateTime}}
+                        {{operationId}}ResponseExample = {{returnType}}.now();
+                    {{/returnProperty.isDateTime}}
+                    {{#returnProperty.isEnum}}
+                        {{#returnProperty.isEnumRef}}
+                            {{operationId}}ResponseExample = {{allowableValues.values.0}}
+                        {{/returnProperty.isEnumRef}}
+                    {{/returnProperty.isEnum}}
+                    {{^returnProperty.isEnum}}
+                        {{^returnProperty.isEnumRef}}
+                            {{^returnProperty.isDateTime}}
+                                {{operationId}}ResponseExample = objectMapper.readValue("""
+                                {{{examples.0.example}}}
+                                """, {{{returnType}}}.class);
+                            {{/returnProperty.isDateTime}}
+                        {{/returnProperty.isEnumRef}}
+                    {{/returnProperty.isEnum}}
+                {{/returnTypeIsPrimitive}}
+            {{/isArray}}
+        {{/returnType}}
+    {{/operation}}
+    }
+    }
+{{/operations}}
