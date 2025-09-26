@@ -1,0 +1,79 @@
+name: OpenAPI Client Generation and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  set-variables:
+    runs-on: ubuntu-latest
+    outputs:
+      openapi_spec_path: ${{ steps.set-vars.outputs.openapi_spec_path }}
+      generator_version: ${{ steps.set-vars.outputs.generator_version }}
+      output_dir: ${{ steps.set-vars.outputs.output_dir }}
+    steps:
+      - name: Set up workflow variables
+        id: set-vars
+        run: |
+          echo "openapi_spec_path=openapi.yaml" >> $GITHUB_OUTPUT
+          echo "generator_version=7.6.0" >> $GITHUB_OUTPUT
+          echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
+
+  generate-client:
+    needs: set-variables
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Generate Java Jersey3 client
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/local" \
+            openapitools/openapi-generator-cli:v${{ needs.set-variables.outputs.generator_version }} \
+            generate \
+            -i /local/${{ needs.set-variables.outputs.openapi_spec_path }} \
+            -g java \
+            --library jersey3 \
+            -o /local/${{ needs.set-variables.outputs.output_dir }} \
+            --additional-properties=useJakartaEe=true
+
+  package-client:
+    needs: generate-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Package client using Maven
+        run: |
+          cd target/generated-client
+          mvn clean package
+
+  deploy-client:
+    needs: package-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload client JAR as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-api-client-jar
+          path: target/generated-client/target/*.jar
