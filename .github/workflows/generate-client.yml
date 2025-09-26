@@ -21,7 +21,7 @@ jobs:
           echo "openapi_spec_path=openapi.yaml" >> $GITHUB_OUTPUT
           echo "generator_version=7.15.0" >> $GITHUB_OUTPUT
           echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
-          echo "template_dir=supporting-files/generator-templates/java/jersey3" >> $GITHUB_OUTPUT
+          echo "config_file=supporting-files/generator-configs/java-jersey3.yaml" >> $GITHUB_OUTPUT
 
   generate-client:
     needs: set-variables
@@ -35,7 +35,7 @@ jobs:
             openapitools/openapi-generator-cli:v${{ needs.set-variables.outputs.generator_version }} \
             generate \
             -i /local/${{ needs.set-variables.outputs.openapi_spec_path }} \
-            -c /local/${{ needs.set-variables.outputs.template-dir }} \
+            -c /local/${{ needs.set-variables.outputs.config_file }} \
             -o /local/${{ needs.set-variables.outputs.output_dir }} \
             --additional-properties=useJakartaEe=true
       - name: Upload generated client code
