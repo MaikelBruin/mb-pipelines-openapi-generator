@@ -58,9 +58,6 @@ jobs:
           distribution: 'temurin'
       - name: Package client using Maven
         run: |
-          pwd
-          ls
-          cd generated-client
           mvn clean package
 
   deploy-client:
