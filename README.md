@@ -1,0 +1,1 @@
+# mb-pipelines-openapi-generator
