@@ -23,6 +23,7 @@ jobs:
           echo "generator_version=7.15.0" >> $GITHUB_OUTPUT
           echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
           echo "config_file=supporting-files/generator-configs/java-jersey3.yaml" >> $GITHUB_OUTPUT
+          echo "template_dir=supporting-files/generator-templates/java/jersey3" >> $GITHUB_OUTPUT
 
   generate-client:
     needs: set-variables
