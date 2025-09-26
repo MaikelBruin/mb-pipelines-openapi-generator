@@ -1,7 +1,6 @@
 # A YAML configuration file for the OpenAPI Generator CLI.
 generatorName: java
-outputDir: ./generated-client
-templateDir: ./supporting-files/generator-templates/java/jersey3
+templateDir: supporting-files/generator-templates/java/jersey3
 apiNameSuffix: api
 invokerPackage: mb.demos.openapi.generated.api.client.petstore.client
 apiPackage: mb.demos.openapi.generated.api.client.petstore.api
