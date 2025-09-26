@@ -31,6 +31,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Generate Java Jersey3 client
         run: |
+          pwd
+          ls
           docker run --rm -v "${{ github.workspace }}:/local" \
             openapitools/openapi-generator-cli:v${{ needs.set-variables.outputs.generator_version }} \
             generate \
