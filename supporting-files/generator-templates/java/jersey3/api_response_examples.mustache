@@ -70,10 +70,10 @@ import org.springframework.stereotype.Component;
     {{#operation}}
         {{#returnType}}
             {{#isArray}}
-                public final List<{{{returnBaseType}}}> {{operationId}}ResponseExample;
+                public List<{{{returnBaseType}}}> {{operationId}}ResponseExample;
             {{/isArray}}
             {{^isArray}}
-                public final {{{returnType}}} {{operationId}}ResponseExample;
+                public {{{returnType}}} {{operationId}}ResponseExample;
             {{/isArray}}
         {{/returnType}}
     {{/operation}}
