@@ -13,7 +13,7 @@ jobs:
       openapi_spec_path: ${{ steps.set-vars.outputs.openapi_spec_path }}
       generator_version: ${{ steps.set-vars.outputs.generator_version }}
       output_dir: ${{ steps.set-vars.outputs.output_dir }}
-      template-dir: ${{ steps.set-vars.outputs.template_dir }}
+      config_file: ${{ steps.set-vars.outputs.config_file }}
     steps:
       - name: Set up workflow variables
         id: set-vars
