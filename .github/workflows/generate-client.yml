@@ -18,7 +18,7 @@ jobs:
         id: set-vars
         run: |
           echo "openapi_spec_path=openapi.yaml" >> $GITHUB_OUTPUT
-          echo "generator_version=7.6.0" >> $GITHUB_OUTPUT
+          echo "generator_version=7.15.0" >> $GITHUB_OUTPUT
           echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
 
   generate-client:
@@ -27,14 +27,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
       - name: Generate Java Jersey3 client
         run: |
           docker run --rm -v "${{ github.workspace }}:/local" \
