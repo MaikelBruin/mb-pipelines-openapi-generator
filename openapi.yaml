@@ -369,6 +369,10 @@ paths:
                 additionalProperties:
                   type: integer
                   format: int32
+              example:
+                dogs: 23
+                cats: 42
+                axolotls: 2
         default:
           description: Unexpected error
       security:
