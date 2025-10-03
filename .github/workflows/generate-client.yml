@@ -81,3 +81,12 @@ jobs:
         with:
           name: my-api-client-jar
           path: target/generated-client/target/*.jar
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Deploy artifact to maven repository
+        run: |
+#          please note that the deployment configuration is set in the pom.mustache template
+          mvn deploy
