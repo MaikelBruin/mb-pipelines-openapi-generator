@@ -63,7 +63,7 @@ jobs:
           distribution: 'temurin'
       - name: Package client using Maven
         run: |
-          mvn clean package
+          mvn clean package deploy
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
@@ -74,13 +74,10 @@ jobs:
     needs: package-client
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Upload client JAR as a workflow artifact
-        uses: actions/upload-artifact@v4
+      - name: Download generated client code
+        uses: actions/download-artifact@v4
         with:
-          name: my-api-client-jar
-          path: target/generated-client/target/*.jar
+          name: generated-client-code
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -89,4 +86,5 @@ jobs:
         #please note that the deployment configuration is set in the pom.mustache template
       - name: Deploy artifact to maven repository
         run: |
-          mvn deploy
+          mvn clean deploy
+          
