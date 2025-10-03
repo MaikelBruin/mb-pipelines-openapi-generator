@@ -86,7 +86,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+        #please note that the deployment configuration is set in the pom.mustache template
       - name: Deploy artifact to maven repository
         run: |
-#          please note that the deployment configuration is set in the pom.mustache template
           mvn deploy
