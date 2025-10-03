@@ -64,12 +64,15 @@ jobs:
       - name: Package client using Maven
         run: |
           mvn clean package deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
           name: generated-client-jar
           path: target/*.jar
 
+  #can be combined with package job but deploy requires auth
   deploy-client:
     needs: package-client
     runs-on: ubuntu-latest
@@ -86,5 +89,7 @@ jobs:
         #please note that the deployment configuration is set in the pom.mustache template
       - name: Deploy artifact to maven repository
         run: |
-          mvn clean deploy
-          
+          mvn clean package deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
