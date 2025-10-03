@@ -65,7 +65,7 @@ jobs:
         run: |
           mvn clean package deploy
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MB_PAT }}
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
