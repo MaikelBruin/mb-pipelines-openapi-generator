@@ -9,6 +9,6 @@ on:
 jobs:
   generate-petstore:
     name: Generate, package and deploy petstore api client
-    uses: ./.github/workflows/generate-client-workflow@main
+    uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
