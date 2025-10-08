@@ -57,7 +57,7 @@ jobs:
       - name: Download generated client code
         uses: actions/download-artifact@v4
         with:
-          name: generated-client-code--${{ inputs.app_name }}
+          name: generated-client-code-${{ inputs.app_name }}
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -69,7 +69,7 @@ jobs:
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
-          name: generated-client-jar--${{ inputs.app_name }}
+          name: generated-client-jar-${{ inputs.app_name }}
           path: target/*.jar
 
   #this job can be combined with package job but deploy requires authentication so its splitted here
@@ -80,7 +80,7 @@ jobs:
       - name: Download generated client code
         uses: actions/download-artifact@v4
         with:
-          name: generated-client-code--${{ inputs.app_name }}
+          name: generated-client-code-${{ inputs.app_name }}
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
