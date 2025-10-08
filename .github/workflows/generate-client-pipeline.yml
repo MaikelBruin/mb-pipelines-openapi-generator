@@ -16,7 +16,7 @@ jobs:
       package_name: 'petstore'
       package_version: '1.0.27'
     secrets:
-      github_token: ${{ secrets.MB_PAT }}
+      personal_access_token: ${{ secrets.MB_PAT }}
 
   generate-petstore-analyzer-api-client:
     name: petstore analyzer
@@ -27,4 +27,4 @@ jobs:
       package_name: 'petstore.analyzer'
       package_version: '1.0.0'
     secrets:
-      github_token: ${{ secrets.MB_PAT }}
+      personal_access_token: ${{ secrets.MB_PAT }}

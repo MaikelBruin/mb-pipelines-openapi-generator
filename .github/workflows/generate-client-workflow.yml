@@ -16,7 +16,7 @@ on:
         required: true
         type: string
     secrets:
-      github_token:
+      personal_access_token:
         required: true
 
 jobs:
@@ -103,5 +103,5 @@ jobs:
         #please note that the deployment configuration is set in the pom.mustache template
       - name: Deploy artifact to maven repository
         run: |
-          mvn clean package deploy -Dusername=${{ github.actor }} -Dpassword=${{ secrets.github_token }}
+          mvn clean package deploy -Dusername=${{ github.actor }} -Dpassword=${{ secrets.personal_access_token }}
 
