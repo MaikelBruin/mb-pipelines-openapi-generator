@@ -64,31 +64,8 @@ jobs:
           name: generated-client-code-${{ inputs.app_name }}
           path: ${{ needs.set-variables.outputs.output_dir }}
 
-  package-client:
+  package-and-deploy-client:
     needs: generate-client
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download generated client code
-        uses: actions/download-artifact@v4
-        with:
-          name: generated-client-code-${{ inputs.app_name }}
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Package client using Maven
-        run: |
-          mvn clean package
-      - name: Upload jar
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-client-jar-${{ inputs.app_name }}
-          path: target/*.jar
-
-  #this job can be combined with package job but deploy requires authentication so its splitted here
-  deploy-client:
-    needs: package-client
     runs-on: ubuntu-latest
     steps:
       - name: Download generated client code
