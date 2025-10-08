@@ -8,14 +8,14 @@ on:
 
 jobs:
   generate-petstore-api-client:
-    name: Generate, package and deploy petstore api client
+    name: petstore
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
       app_name: petstore-api
 
   generate-petstore-analyzer-api-client:
-    name: Generate, package and deploy petstore api client
+    name: petstore analyzer
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
