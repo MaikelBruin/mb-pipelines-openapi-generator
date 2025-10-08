@@ -12,11 +12,15 @@ jobs:
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
-      app_name: petstore-api
+      app_name: 'petstore'
+      package_name: 'petstore'
+      package_version: '1.0.27'
 
   generate-petstore-analyzer-api-client:
     name: petstore analyzer
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
-      app_name: petstore-analyzer-api
+      app_name: 'petstore-analyzer'
+      package_name: 'petstore.analyzer'
+      package_version: '1.0.0'

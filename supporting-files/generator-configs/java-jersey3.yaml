@@ -1,16 +1,11 @@
 # A YAML configuration file for the OpenAPI Generator CLI.
 generatorName: java
 apiNameSuffix: api
-invokerPackage: mb.demos.openapi.generated.api.client.petstore.client
-apiPackage: mb.demos.openapi.generated.api.client.petstore.api
-modelPackage: mb.demos.openapi.generated.api.client.petstore.model
 
 
 # Additional properties to pass to the generator.
 additionalProperties:
   groupId: mb.demos.openapi.generated.api.client
-  artifactId: petstore #should be retrieved from openapi spec file
-  artifactVersion: 1.0.27 #should be retrieved from openapi spec file
   asyncNative: false
   licenseName: OwnedByMaikelBruin
   licenseUrl: https://openapi-generator.tech/
