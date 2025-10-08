@@ -1,16 +1,16 @@
-name: OpenAPI Client Generation and Deploy
+name: OpenAPI Client Generation and Deploy workflow
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      openapi_spec_path:
+        required: true
+        type: string
 
 jobs:
   set-variables:
     runs-on: ubuntu-latest
     outputs:
-      openapi_spec_path: ${{ steps.set-vars.outputs.openapi_spec_path }}
       generator_version: ${{ steps.set-vars.outputs.generator_version }}
       template_dir: ${{ steps.set-vars.outputs.template_dir }}
       output_dir: ${{ steps.set-vars.outputs.output_dir }}
@@ -19,7 +19,6 @@ jobs:
       - name: Set up workflow variables
         id: set-vars
         run: |
-          echo "openapi_spec_path=openapi.yaml" >> $GITHUB_OUTPUT
           echo "generator_version=7.15.0" >> $GITHUB_OUTPUT
           echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
           echo "config_file=supporting-files/generator-configs/java-jersey3.yaml" >> $GITHUB_OUTPUT
@@ -38,7 +37,7 @@ jobs:
           docker run --rm -v "${{ github.workspace }}:/local" \
             openapitools/openapi-generator-cli:v${{ needs.set-variables.outputs.generator_version }} \
             generate \
-            -i /local/${{ needs.set-variables.outputs.openapi_spec_path }} \
+            -i /local/${{ inputs.openapi_spec_path }} \
             --template-dir /local/${{ needs.set-variables.outputs.template_dir }} \
             -c /local/${{ needs.set-variables.outputs.config_file }} \
             -o /local/${{ needs.set-variables.outputs.output_dir }}

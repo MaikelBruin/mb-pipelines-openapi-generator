@@ -1,0 +1,14 @@
+name: OpenAPI Client Generation and Deploy pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  generate-petstore:
+    name: Generate, package and deploy petstore api client
+    uses: ./.github/workflows/generate-client-workflow@main
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'

@@ -1,0 +1,115 @@
+openapi: 3.0.1
+info:
+  title: petstore analyzer
+  description: 'An api to demonstrate working with (external) dependencies and usage of generated clients and mocks'
+  version: '1.0.0'
+servers:
+  - url: 'https://localhost:8080'
+    description: 'local'
+paths:
+  /api/ratios/availablity:
+    get:
+      tags:
+        - ratios
+      operationId: getPetAvailabilityRatio
+      summary: Gets the ratio of available pets vs sold pets from the petstore
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRatioResponse'
+  /api/totals/dogs:
+    get:
+      tags:
+        - totals
+      operationId: getTotalNumberOfDogs
+      summary: Gets the total number of dogs in the petstore
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalResponse'
+  /api/totals/cats:
+    get:
+      tags:
+        - totals
+      operationId: getTotalNumberOfCats
+      summary: Gets the total number of cats in the petstore
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalResponse'
+  /api/totals:
+    get:
+      tags:
+        - totals
+      operationId: findTotalNumberOfPetsByTag
+      summary: Finds the total number of pets by tag in the petstore
+      parameters:
+        - name: tag
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalResponse'
+  /api/totals/available:
+    get:
+      tags:
+        - totals
+      operationId: getTotalNumberOfAvailablePets
+      summary: Gets the total number of available pets in the petstore
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalResponse'
+components:
+  schemas:
+    AvailabilityRatioResponse:
+      title: AvailabilityRatioResponse
+      type: object
+      properties:
+        ratio:
+          type: number
+          description: The ratio of available pets compared to sold pets.
+          example: 0.5
+        availablePets:
+          type: integer
+          description: The total number of available pets.
+          example: 4
+        soldPets:
+          type: integer
+          description: The total number of sold pets.
+          example: 8
+      example:
+        ratio: 0.5
+        availablePets: 4
+        soldPets: 8
+    TotalResponse:
+      title: TotalResponse
+      type: object
+      properties:
+        total:
+          type: integer
+          description: The total number of dogs found in the petstore.
+          example: 101
+
+
+
+
+
