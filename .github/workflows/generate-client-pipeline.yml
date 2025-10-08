@@ -15,9 +15,6 @@ jobs:
       app_name: 'petstore'
       package_name: 'petstore'
       package_version: '1.0.27'
-    env:
-      GITHUB_USER: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.MB_PAT }}
 
   generate-petstore-analyzer-api-client:
     name: petstore analyzer
@@ -27,6 +24,3 @@ jobs:
       app_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
       package_version: '1.0.0'
-    env:
-      GITHUB_USER: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.MB_PAT }}
