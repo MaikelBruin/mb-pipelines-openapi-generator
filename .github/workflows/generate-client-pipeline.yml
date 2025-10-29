@@ -26,6 +26,6 @@ jobs:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
       app_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
-      package_version: '1.0.0'
+      package_version: '1.1.0' #todo: retrieve this from yaml file
     secrets:
       personal_access_token: ${{ secrets.MB_PAT }}

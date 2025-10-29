@@ -2,11 +2,24 @@ openapi: 3.0.1
 info:
   title: petstore analyzer
   description: 'An api to demonstrate working with (external) dependencies and usage of generated clients and mocks'
-  version: '1.0.0'
+  version: '1.1.0'
 servers:
   - url: 'https://localhost:8080'
     description: 'local'
 paths:
+  /api/available/rats:
+    get:
+      tags:
+        - available
+      operationId: getHasAvailableRats
+      summary: Returns a response including a boolean property if there are any available rats
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HasAvailableResponse'
   /api/ratios/availablity:
     get:
       tags:
@@ -108,8 +121,11 @@ components:
           type: integer
           description: The total number of dogs found in the petstore.
           example: 101
-
-
-
-
-
+    HasAvailableResponse:
+      title: HasAvailableResponse
+      type: object
+      properties:
+        hasAvailable:
+          type: boolean
+          description: True if there are available pets.
+          example: true
