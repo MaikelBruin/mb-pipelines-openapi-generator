@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: petstore analyzer
   description: 'An api to demonstrate working with (external) dependencies and usage of generated clients and mocks'
-  version: '1.1.0'
+  version: '1.1.1'
 servers:
   - url: 'https://localhost:8080'
     description: 'local'
@@ -20,7 +20,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HasAvailableResponse'
-  /api/ratios/availablity:
+  /api/ratios/availability:
     get:
       tags:
         - ratios
