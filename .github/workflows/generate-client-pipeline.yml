@@ -37,7 +37,6 @@ jobs:
       app_name: 'petstore-no-template'
       package_name: 'petstore'
       package_version: '1.0.27-${{ github.sha }}'
-      deploy: false
 
   generate-petstore-analyzer-api-client:
     name: petstore analyzer
