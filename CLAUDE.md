@@ -6,19 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 There is **no application code here**. This repo is a *generator configuration* project: OpenAPI specs + a customised OpenAPI Generator template set + GitHub Actions workflows that produce Java (Jersey3) API clients *and Mockito/Spring mock providers*, then publish them as Maven artifacts to GitHub Packages.
 
-Everything under `generated-client/` is generator output and is gitignored (as is `openapi-generator-cli-*.jar`) — never hand-edit it, and don't treat it as source of truth; it may be stale relative to the templates. To change generated code, change the mustache template or the generator config.
+Generator output goes to `target/generated-client/` and is gitignored (as are `generated-client/` from older runs and `openapi-generator-cli-*.jar`) — never hand-edit it, and don't treat it as source of truth; it may be stale relative to the templates. To change generated code, change the mustache template or the generator config.
 
 ## Commands
 
-Local generation requires `openapi-generator-cli-7.15.0.jar` in the repo root ([download instructions](https://github.com/OpenAPITools/openapi-generator/tree/master?tab=readme-ov-file#13---download-jar)).
+Local generation requires `openapi-generator-cli-7.15.0.jar` in the repo root ([download instructions](https://github.com/OpenAPITools/openapi-generator/tree/master?tab=readme-ov-file#13---download-jar)). **Always run from the repo root** — the generator configs set `templateDir` as a path relative to the working directory.
 
 ```bash
 # Generate a client locally (mirrors the CI step)
 java -jar openapi-generator-cli-7.15.0.jar generate \
   -i supporting-files/oas-input/petstore-api.yaml \
-  --template-dir supporting-files/generator-templates/java/jersey3 \
   -c supporting-files/generator-configs/java-jersey3.yaml \
-  -o ./generated-client
+  -o ./target/generated-client
 
 # Dump the mustache data model for all operations — the reference for what
 # variables a template can use. Writes debugOperations JSON to stdout.
@@ -27,22 +26,41 @@ java -jar openapi-generator-cli-7.15.0.jar generate ... --global-property debugO
 
 A previously captured dump lives at `supporting-files/generator-documents/petstore-debug-operations.json` (~3 MB) — grep it rather than reading it whole when you need to know whether a mustache variable exists.
 
+To reproduce CI exactly, run it through Docker. **`-w /local` is mandatory**: the image sets no `WorkingDir`, so the container cwd is `/` and the relative `templateDir` in the config would resolve outside the mount — silently producing nothing for configs without `templateDir`, and failing with `Template directory ... does not exist` for those with it.
+
+```bash
+docker run --rm -v "$PWD:/local" -w /local \
+  openapitools/openapi-generator-cli:v7.15.0 generate \
+  -i /local/supporting-files/oas-input/petstore-api.yaml \
+  -c /local/supporting-files/generator-configs/java-jersey3.yaml \
+  -o /local/target/generated-client
+```
+
 Build/test the generated client (the generated `pom.xml` comes from `pom.mustache`; Java 17):
 
 ```bash
-cd generated-client && mvn clean package     # single test: mvn test -Dtest=PetApiTest
-cd generated-client && mvn spotless:apply    # google-java-format AOSP, configured in pom.mustache
+cd target/generated-client && mvn clean package   # single test: mvn test -Dtest=PetApiTest
+cd target/generated-client && mvn spotless:apply  # google-java-format AOSP, configured in pom.mustache
 ```
 
 ## Architecture
 
-**Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares one job per API, each calling the reusable `generate-client-workflow.yml` with `openapi_spec_path`, `app_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
+**Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares one job per API, each calling the reusable `generate-client-workflow.yml` with `openapi_spec_path`, `generator_config_file`, `app_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
 
-The reusable workflow has three jobs: `set-variables` (pins generator version 7.15.0, config path, template dir, output dir) → `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as an artifact) → `package-and-deploy-client` (downloads the artifact, `mvn clean package deploy`). Deployment credentials come in as `-Dusername`/`-Dpassword`; the target repository is **hardcoded in `pom.mustache`'s `<distributionManagement>`**, not in the workflow.
+The reusable workflow has two jobs: `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as an artifact) → `package-and-deploy-client` (downloads the artifact, `mvn clean package deploy`). Generator version and output directory are workflow-level `env` values. Deployment credentials come in as `-Dusername`/`-Dpassword`; the target repository is **hardcoded in `pom.mustache`'s `<distributionManagement>`**, not in the workflow.
 
-**To add a new API**: drop the spec in `supporting-files/oas-input/`, then add a job to `generate-client-pipeline.yml`. Nothing else needs touching.
+`app_name` must be unique per job: it becomes both the Maven `artifactId` and the upload/download artifact name, and `upload-artifact@v4` artifacts are immutable — two jobs uploading the same name in one run fail with a 409 conflict.
 
-**Generator config** (`supporting-files/generator-configs/java-jersey3.yaml`) is shared by every API: `generatorName: java`, `library: jersey3`, `apiNameSuffix: api`, Jackson, Jakarta EE. Its `files:` block is the important part — it registers four *extra* per-API template outputs beyond the stock generator (`Client.java`, `MockProvider.java`, `MockConfiguration.java`, `ResponseExamples.java`, each suffixed onto the API class name, e.g. `PetApiClient.java`).
+**Path ownership is deliberate.** The output directory lives in the workflow (`env.output_dir`, passed as `-o`) because the upload step has to know where the code landed. `templateDir` lives in the *config file* because it must vary per config — that is what distinguishes the two configs, and it cannot be hoisted to a shared CLI flag. Note that `templateDir` in a config is existence-checked inside `CodegenConfigurator.fromFile`, *before* CLI flags are applied, so a bad relative path there is fatal even if `--template-dir` is also passed.
+
+**To add a new API**: drop the spec in `supporting-files/oas-input/`, then add a job to `generate-client-pipeline.yml` pointing at a generator config. Nothing else needs touching.
+
+**Generator configs** live in `supporting-files/generator-configs/` and are selected per job. Both share `generatorName: java`, `library: jersey3`, `apiNameSuffix: api`, Jackson, Jakarta EE:
+
+- `java-jersey3.yaml` — the real one. Sets `templateDir` to the custom template set, and its `files:` block registers four *extra* per-API template outputs beyond the stock generator (`Client.java`, `MockProvider.java`, `MockConfiguration.java`, `ResponseExamples.java`, each suffixed onto the API class name, e.g. `PetApiClient.java`).
+- `java-jersey3-no-template.yaml` — no `templateDir`, no `files:`. Produces a stock client (a concrete `PetApi` class, no mocks) for comparison. Published under `artifactId=petstore-no-template`.
+
+Both petstore variants generate into the *same* Java package, so they are drop-in alternatives — don't put both jars on one classpath, the API types collide on fully-qualified name.
 
 **The interface/implementation split is a customisation.** Upstream `api.mustache` emits a concrete class; here it emits `interface {{classname}}` (e.g. `PetApi`), and `api_client.mustache` emits `{{classname}}Client implements {{classname}}` with the actual Jersey invocation code. Anything consuming a generated client should depend on the interface so the mock can be substituted.
 

@@ -1,9 +1,9 @@
 # A YAML configuration file for the OpenAPI Generator CLI.
+# Same as java-jersey3.yaml but without templateDir and the custom `files:` block,
+# so the stock jersey3 templates are used. The output directory is not set here;
+# the caller passes -o.
 generatorName: java
 apiNameSuffix: api
-# Relative to the working directory of the generator, i.e. the repo root. The
-# output directory is deliberately NOT set here; the caller passes -o.
-templateDir: ./supporting-files/generator-templates/java/jersey3
 
 
 # Additional properties to pass to the generator.
@@ -23,16 +23,3 @@ additionalProperties:
   library: jersey3
   dateLibrary: java
   legacyDiscriminatorBehavior: true
-files:
-  api_client.mustache:
-    templateType: API
-    destinationFilename: Client.java
-  api_mock.mustache:
-    templateType: API
-    destinationFilename: MockProvider.java
-  api_mock_configuration.mustache:
-    templateType: API
-    destinationFilename: MockConfiguration.java
-  api_response_examples.mustache:
-    templateType: API
-    destinationFilename: ResponseExamples.java

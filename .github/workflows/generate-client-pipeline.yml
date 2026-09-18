@@ -13,9 +13,24 @@ jobs:
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
       app_name: 'petstore'
       package_name: 'petstore'
-      package_version: '1.0.27'
+      package_version: '1.0.27-${{ github.sha }}'
+    secrets:
+      personal_access_token: ${{ secrets.MB_PAT }}
+
+  # Same spec as above, but generated with the stock jersey3 templates (no custom
+  # interface/Client split and no mock providers) for comparison.
+  generate-petstore-api-client-no-template:
+    name: petstore (stock templates)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      app_name: 'petstore-no-template'
+      package_name: 'petstore'
+      package_version: '1.0.27-${{ github.sha }}'
     secrets:
       personal_access_token: ${{ secrets.MB_PAT }}
 
@@ -24,8 +39,9 @@ jobs:
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
       app_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
-      package_version: '1.1.1' #todo: retrieve this from yaml file
+      package_version: '1.1.1-${{ github.sha }}' #todo: retrieve this from yaml file
     secrets:
       personal_access_token: ${{ secrets.MB_PAT }}
