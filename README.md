@@ -7,16 +7,30 @@ For more information:
 
 ## local usage
 First download the jar using the [openapi readme](https://github.com/OpenAPITools/openapi-generator/tree/master?tab=readme-ov-file#13---download-jar).
+
+Run all commands **from the repository root**: the generator config sets `templateDir`
+as a relative path, so it is resolved against the working directory.
+
 example commands:
 
 ### local debugging
 ```
-java -jar openapi-generator-cli-7.15.0.jar generate -i openapi.yaml --template-dir supporting-files/generator-templates/java/jersey3  -c supporting-files/generator-configs/java-jersey3.yaml -o ./generated-client
+java -jar openapi-generator-cli-7.15.0.jar generate -i supporting-files/oas-input/petstore-api.yaml -c supporting-files/generator-configs/java-jersey3.yaml -o ./target/generated-client
 ```
+
+Use `java-jersey3-no-template.yaml` instead to generate with the stock jersey3
+templates (no interface/Client split, no mock providers).
 
 Output json model for operations to use in template files
 ```
-java -jar openapi-generator-cli-7.15.0.jar generate -i openapi.yaml --template-dir supporting-files/generator-templates/java/jersey3  -c supporting-files/generator-configs/java-jersey3.yaml -o ./generated-client --global-property debugOperations=true 
+java -jar openapi-generator-cli-7.15.0.jar generate -i supporting-files/oas-input/petstore-api.yaml -c supporting-files/generator-configs/java-jersey3.yaml -o ./target/generated-client --global-property debugOperations=true
+```
+
+### via docker (as the pipeline does it)
+`-w /local` is required so that the relative `templateDir` in the config resolves
+inside the mount; the image itself has no working directory set, so it defaults to `/`.
+```
+docker run --rm -v "$PWD:/local" -w /local openapitools/openapi-generator-cli:v7.15.0 generate -i /local/supporting-files/oas-input/petstore-api.yaml -c /local/supporting-files/generator-configs/java-jersey3.yaml -o /local/target/generated-client
 ```
 
 ### mock

@@ -29,14 +29,9 @@
         </license>
     </licenses>
 
-    <!--    TODO: replace with own artifact repository configuration-->
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub MaikelBruin Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/MaikelBruin/mb-pipelines-openapi-generator</url>
-        </repository>
-    </distributionManagement>
+    <!-- No distributionManagement on purpose: the deploy target is supplied by
+         the caller via -DaltDeploymentRepository=github::<url>, so this template
+         is not tied to one artifact repository. -->
     <developers>
         <developer>
             <name>{{developerName}}</name>

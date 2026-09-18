@@ -7,25 +7,43 @@ on:
       - 'feat/**'
   workflow_dispatch:
 
+# A called workflow's GITHUB_TOKEN can only be equal to or more restrictive than
+# the caller's, so packages:write has to be granted here for publishing to work.
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   generate-petstore-api-client:
     name: petstore
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
       app_name: 'petstore'
       package_name: 'petstore'
-      package_version: '1.0.27'
-    secrets:
-      personal_access_token: ${{ secrets.MB_PAT }}
+      package_version: '1.0.27-${{ github.sha }}'
+
+  # Same spec as above, but generated with the stock jersey3 templates (no custom
+  # interface/Client split and no mock providers) for comparison. Built but not
+  # published: the stock pom.mustache has no distributionManagement block, and a
+  # comparison artifact has no consumers.
+  generate-petstore-api-client-no-template:
+    name: petstore (stock templates)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      app_name: 'petstore-no-template'
+      package_name: 'petstore'
+      package_version: '1.0.27-${{ github.sha }}'
 
   generate-petstore-analyzer-api-client:
     name: petstore analyzer
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
       app_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
-      package_version: '1.1.1' #todo: retrieve this from yaml file
-    secrets:
-      personal_access_token: ${{ secrets.MB_PAT }}
+      package_version: '1.1.1-${{ github.sha }}' #todo: retrieve this from yaml file
