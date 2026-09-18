@@ -18,9 +18,13 @@ on:
       package_version:
         required: true
         type: string
-    secrets:
-      personal_access_token:
-        required: true
+      # Set to false to build the client without publishing it. Used for variants
+      # that only exist for comparison, and for configs whose pom.xml comes from
+      # the stock templates.
+      deploy:
+        required: false
+        type: boolean
+        default: true
 
 env:
   generator_version: '7.15.0'
@@ -31,6 +35,8 @@ env:
 jobs:
   generate-client:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,19 +65,36 @@ jobs:
   package-and-deploy-client:
     needs: generate-client
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for mvn deploy to push to this repository's GitHub Packages
+      # registry. The caller must grant at least this much.
+      packages: write
     steps:
       - name: Download generated client code
         uses: actions/download-artifact@v4
         with:
           name: generated-client-code-${{ inputs.app_name }}
+      # setup-java writes ~/.m2/settings.xml with a server whose id is `github`
+      # (its default), reading credentials from the GITHUB_ACTOR and GITHUB_TOKEN
+      # environment variables. That id is what -DaltDeploymentRepository targets.
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-        #please note that the deployment configuration is set in the pom.mustache template
-      - name: Deploy artifact to maven repository
+
+      - name: Package client
+        if: ${{ !inputs.deploy }}
+        run: mvn --batch-mode --no-transfer-progress clean package
+
+      - name: Package and deploy client to GitHub Packages
+        if: ${{ inputs.deploy }}
+        # The deploy target is passed here rather than hardcoded in
+        # pom.mustache, so it also works for poms generated from the stock
+        # templates (which have no distributionManagement block).
         run: |
-          mvn clean package deploy -Dusername=${{ github.actor }} -Dpassword=$GITHUB_TOKEN
+          mvn --batch-mode --no-transfer-progress clean deploy \
+            -DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }}
         env:
-          GITHUB_TOKEN: ${{ secrets.personal_access_token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -47,7 +47,11 @@ cd target/generated-client && mvn spotless:apply  # google-java-format AOSP, con
 
 **Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares one job per API, each calling the reusable `generate-client-workflow.yml` with `openapi_spec_path`, `generator_config_file`, `app_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
 
-The reusable workflow has two jobs: `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as an artifact) → `package-and-deploy-client` (downloads the artifact, `mvn clean package deploy`). Generator version and output directory are workflow-level `env` values. Deployment credentials come in as `-Dusername`/`-Dpassword`; the target repository is **hardcoded in `pom.mustache`'s `<distributionManagement>`**, not in the workflow.
+The reusable workflow has two jobs: `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as an artifact) → `package-and-deploy-client` (downloads the artifact, then `mvn clean deploy`, or just `mvn clean package` when the `deploy` input is `false`). Generator version and output directory are workflow-level `env` values.
+
+**Publishing.** Auth relies on a default nobody sets explicitly: `setup-java` always writes `~/.m2/settings.xml` containing a server with id `github`, whose credentials interpolate the `GITHUB_ACTOR` and `GITHUB_TOKEN` *environment variables*. `GITHUB_ACTOR` is always present; the deploy step sets `GITHUB_TOKEN` from `secrets.GITHUB_TOKEN`. The deploy target is passed as `-DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }}` — the `github` prefix must match that settings.xml server id. Nothing is hardcoded in `pom.mustache`, so poms generated from the *stock* templates (which have no `<distributionManagement>`) can also be deployed.
+
+Publishing needs `packages: write` on the `GITHUB_TOKEN`. A called workflow's token can only be equal to or more restrictive than its caller's, so the grant appears in **both** `generate-client-pipeline.yml` (workflow level) and the `package-and-deploy-client` job. Removing either one yields a 401 at deploy time.
 
 `app_name` must be unique per job: it becomes both the Maven `artifactId` and the upload/download artifact name, and `upload-artifact@v4` artifacts are immutable — two jobs uploading the same name in one run fail with a 409 conflict.
 
@@ -58,7 +62,7 @@ The reusable workflow has two jobs: `generate-client` (runs `openapitools/openap
 **Generator configs** live in `supporting-files/generator-configs/` and are selected per job. Both share `generatorName: java`, `library: jersey3`, `apiNameSuffix: api`, Jackson, Jakarta EE:
 
 - `java-jersey3.yaml` — the real one. Sets `templateDir` to the custom template set, and its `files:` block registers four *extra* per-API template outputs beyond the stock generator (`Client.java`, `MockProvider.java`, `MockConfiguration.java`, `ResponseExamples.java`, each suffixed onto the API class name, e.g. `PetApiClient.java`).
-- `java-jersey3-no-template.yaml` — no `templateDir`, no `files:`. Produces a stock client (a concrete `PetApi` class, no mocks) for comparison. Published under `artifactId=petstore-no-template`.
+- `java-jersey3-no-template.yaml` — no `templateDir`, no `files:`. Produces a stock client (a concrete `PetApi` class, no mocks) for comparison, built under `artifactId=petstore-no-template` with `deploy: false` so it is compiled but never published.
 
 Both petstore variants generate into the *same* Java package, so they are drop-in alternatives — don't put both jars on one classpath, the API types collide on fully-qualified name.
 
@@ -78,5 +82,4 @@ Because these templates emit Mockito, Lombok and `spring-context` usage into `sr
 
 ## Known rough edges
 
-- `package_version` is hardcoded per job in the pipeline; the intent (per the inline TODO) is to read it from the spec's `info.version`.
-- `pom.mustache` carries a `TODO: replace with own artifact repository configuration` on `<distributionManagement>`.
+- `package_version` is hardcoded per job in the pipeline; the intent (per the inline TODO) is to read it from the spec's `info.version`. It is suffixed with `github.sha`, so every push publishes a new immutable release version.
