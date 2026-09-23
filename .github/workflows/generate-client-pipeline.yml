@@ -38,6 +38,16 @@ jobs:
       package_name: 'petstore'
       package_version: '1.0.27-${{ github.sha }}'
 
+  generate-petstore-analyzer-consumer-api-client:
+    name: petstore analyzer consumer
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      app_name: 'petstore-analyzer-consumer'
+      package_name: 'petstore-analyzer-consumer'
+      package_version: '1.1.1-${{ github.sha }}'
+
   generate-petstore-analyzer-api-client:
     name: petstore analyzer
     uses: ./.github/workflows/generate-client-workflow.yml
