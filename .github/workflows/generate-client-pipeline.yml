@@ -19,16 +19,18 @@ jobs:
     name: petstore (default templates)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-default'
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
       artifact_name: 'petstore-default-template'
       package_name: 'petstore'
       package_version: '1.0.27-default-${{ github.sha }}'
-  
+
   generate-petstore-analyzer-api-client-default-template:
     name: petstore analyzer (default template)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-analyzer-default'
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
       artifact_name: 'petstore-analyzer'
@@ -39,39 +41,43 @@ jobs:
     name: petstore analyzer consumer (default template)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-analyzer-consumer-default'
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
       artifact_name: 'petstore-analyzer-consumer'
       package_name: 'petstore.analyzer.consumer'
       package_version: '1.1.1-default-${{ github.sha }}'
-  
-  
+
+
   # with  generated mocks
   generate-petstore-api-client-with-mock:
     name: petstore (with mock)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-with-mock'
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
       artifact_name: 'petstore'
       package_name: 'petstore'
       package_version: '1.0.27-custom-${{ github.sha }}'
 
-  
+
   generate-petstore-analyzer-api-client-with-mock:
     name: petstore analyzer (with mock)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-analyzer-with-mock'
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
       artifact_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
       package_version: '1.1.1-custom-${{ github.sha }}'
-  
+
   generate-petstore-analyzer-consumer-api-client-with-mock:
     name: petstore analyzer consumer (with mock)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-analyzer-consumer-with-mock'
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
       artifact_name: 'petstore-analyzer-consumer'

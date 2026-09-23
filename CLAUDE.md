@@ -45,26 +45,28 @@ cd target/generated-client && mvn spotless:apply  # google-java-format AOSP, con
 
 ## Architecture
 
-**Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares one job per API, each calling the reusable `generate-client-workflow.yml` with `openapi_spec_path`, `generator_config_file`, `artifact_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
+**Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares **two jobs per API** — one generating with the stock templates, one with the custom mock templates — each calling the reusable `generate-client-workflow.yml` with `workflow_id` (→ the upload/download artifact name), `openapi_spec_path`, `generator_config_file`, `artifact_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
 
-The reusable workflow has two jobs: `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as an artifact) → `package-and-deploy-client` (downloads the artifact, then `mvn clean deploy`, or just `mvn clean package` when the `deploy` input is `false`). Generator version and output directory are workflow-level `env` values.
+Three specs are wired up (`petstore-api.yaml`, `petstore-analyzer-api.yaml`, `petstore-analyzer-consumer-api.yaml`), giving six jobs grouped in the file under `# without generated mocks` and `# with  generated mocks` comments. The two variants of one API are told apart by the `-default-`/`-custom-` infix in `package_version`.
+
+The reusable workflow has two jobs: `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as artifact `generated-client-code-<workflow_id>`) → `package-and-deploy-client` (downloads that artifact, then `mvn clean deploy`, or just `mvn clean package` when the optional `deploy` input is `false`). `deploy` defaults to `true` and no job currently overrides it, so all six jobs publish. Generator version and output directory are workflow-level `env` values.
 
 **Publishing.** Auth relies on a default nobody sets explicitly: `setup-java` always writes `~/.m2/settings.xml` containing a server with id `github`, whose credentials interpolate the `GITHUB_ACTOR` and `GITHUB_TOKEN` *environment variables*. `GITHUB_ACTOR` is always present; the deploy step sets `GITHUB_TOKEN` from `secrets.GITHUB_TOKEN`. The deploy target is passed as `-DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }}` — the `github` prefix must match that settings.xml server id. Nothing is hardcoded in `pom.mustache`, so poms generated from the *stock* templates (which have no `<distributionManagement>`) can also be deployed.
 
 Publishing needs `packages: write` on the `GITHUB_TOKEN`. A called workflow's token can only be equal to or more restrictive than its caller's, so the grant appears in **both** `generate-client-pipeline.yml` (workflow level) and the `package-and-deploy-client` job. Removing either one yields a 401 at deploy time.
 
-`artifact_name` must be unique per job: it becomes both the Maven `artifactId` and the upload/download artifact name, and `upload-artifact@v4` artifacts are immutable — two jobs uploading the same name in one run fail with a 409 conflict.
+`workflow_id` must be unique per job: it names the uploaded artifact, and `upload-artifact@v4` artifacts are immutable — two jobs uploading the same name in one run fail with a 409 conflict. It exists precisely so that `artifact_name` (the Maven `artifactId`) can be shared between the default-template and mock variants of the same API, which it currently is for `petstore-analyzer` and `petstore-analyzer-consumer`. Consequence: those two variants publish under *identical* Maven coordinates apart from the version suffix, even though the mock variant has a structurally different API (interface + `Client` + mock trio vs. one concrete class).
 
 **Path ownership is deliberate.** The output directory lives in the workflow (`env.output_dir`, passed as `-o`) because the upload step has to know where the code landed. `templateDir` lives in the *config file* because it must vary per config — that is what distinguishes the two configs, and it cannot be hoisted to a shared CLI flag. Note that `templateDir` in a config is existence-checked inside `CodegenConfigurator.fromFile`, *before* CLI flags are applied, so a bad relative path there is fatal even if `--template-dir` is also passed.
 
-**To add a new API**: drop the spec in `supporting-files/oas-input/`, then add a job to `generate-client-pipeline.yml` pointing at a generator config. Nothing else needs touching.
+**To add a new API**: drop the spec in `supporting-files/oas-input/`, then add a job to `generate-client-pipeline.yml` pointing at a generator config (two jobs if you want both the default-template and the mock variant), with a fresh `workflow_id`. Nothing else needs touching.
 
 **Generator configs** live in `supporting-files/generator-configs/` and are selected per job. Both share `generatorName: java`, `library: jersey3`, `apiNameSuffix: api`, Jackson, Jakarta EE:
 
 - `java-jersey3.yaml` — the real one. Sets `templateDir` to the custom template set, and its `files:` block registers four *extra* per-API template outputs beyond the stock generator (`Client.java`, `MockProvider.java`, `MockConfiguration.java`, `ResponseExamples.java`, each suffixed onto the API class name, e.g. `PetApiClient.java`).
-- `java-jersey3-no-template.yaml` — no `templateDir`, no `files:`. Produces a stock client (a concrete `PetApi` class, no mocks) for comparison, built under `artifactId=petstore-no-template` with `deploy: false` so it is compiled but never published.
+- `java-jersey3-no-template.yaml` — no `templateDir`, no `files:`. Produces a stock client (a concrete `PetApi` class, no mocks) for comparison. Used by the three `*-default-template` jobs, which publish under `artifactId`s `petstore-default-template`, `petstore-analyzer` and `petstore-analyzer-consumer`.
 
-Both petstore variants generate into the *same* Java package, so they are drop-in alternatives — don't put both jars on one classpath, the API types collide on fully-qualified name.
+Each API's two variants generate into the *same* Java package, so they are drop-in alternatives — don't put both jars on one classpath, the API types collide on fully-qualified name.
 
 **The interface/implementation split is a customisation.** Upstream `api.mustache` emits a concrete class; here it emits `interface {{classname}}` (e.g. `PetApi`), and `api_client.mustache` emits `{{classname}}Client implements {{classname}}` with the actual Jersey invocation code. Anything consuming a generated client should depend on the interface so the mock can be substituted.
 
@@ -72,7 +74,7 @@ Both petstore variants generate into the *same* Java package, so they are drop-i
 
 - `api_response_examples.mustache` → `{{classname}}ResponseExamples`: a Spring `@Component` that deserialises the response `example` payloads baked into the spec (`examples.0.example` in the mustache model) into typed fields named `{{operationId}}ResponseExample`, plus a `DEFAULT_HEADERS` map. Operations whose response schema carries no example produce nothing usable — examples in the OAS input are what drive mock fidelity.
 - `api_mock.mustache` → `{{classname}}MockProvider`: `Mockito.spy` of the `Client`, with `doReturn(...)` stubs for every `{{operationId}}WithHttpInfo` returning a 200 `ApiResponse` built from the response examples.
-- `api_mock_configuration.mustache` → `{{classname}}MockConfiguration`: Spring `@Configuration` exposing the spy as a `@Primary @Bean` typed as the *interface*. Bean and configuration names are prefixed with the camel-cased `artifactId`, so `artifact_name` in the pipeline must be unique across APIs sharing a Spring context.
+- `api_mock_configuration.mustache` → `{{classname}}MockConfiguration`: Spring `@Configuration` exposing the spy as a `@Primary @Bean` typed as the *interface*. Bean and configuration names are prefixed with the camel-cased `artifactId`, so `artifact_name` must differ between APIs whose mocks share a Spring context.
 
 Because these templates emit Mockito, Lombok and `spring-context` usage into `src/main`, `pom.mustache` declares those as **compile-scope** dependencies (see the "custom additions" block) — mocks ship inside the published client jar rather than a test jar.
 
@@ -83,3 +85,4 @@ Because these templates emit Mockito, Lombok and `spring-context` usage into `sr
 ## Known rough edges
 
 - `package_version` is hardcoded per job in the pipeline; the intent (per the inline TODO) is to read it from the spec's `info.version`. It is suffixed with `github.sha`, so every push publishes a new immutable release version.
+- `generate-petstore-analyzer-consumer-api-client-with-mock` points at `java-jersey3-no-template.yaml`, unlike the other two `*-with-mock` jobs. As it stands it publishes a mock-free client under a `-custom-` version — looks like a copy/paste slip rather than a deliberate choice.

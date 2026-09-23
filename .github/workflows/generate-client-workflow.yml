@@ -3,6 +3,9 @@ name: OpenAPI Client Generation and Deploy workflow
 on:
   workflow_call:
     inputs:
+      workflow_id:
+        required: true
+        type: string
       openapi_spec_path:
         required: true
         type: string
@@ -59,7 +62,7 @@ jobs:
       - name: Upload generated client code
         uses: actions/upload-artifact@v4
         with:
-          name: generated-client-code-${{ inputs.artifact_name }}
+          name: generated-client-code-${{ inputs.workflow_id }}
           path: ${{ env.output_dir }}
 
   package-and-deploy-client:
@@ -74,7 +77,7 @@ jobs:
       - name: Download generated client code
         uses: actions/download-artifact@v4
         with:
-          name: generated-client-code-${{ inputs.artifact_name }}
+          name: generated-client-code-${{ inputs.workflow_id }}
       # setup-java writes ~/.m2/settings.xml with a server whose id is `github`
       # (its default), reading credentials from the GITHUB_ACTOR and GITHUB_TOKEN
       # environment variables. That id is what -DaltDeploymentRepository targets.
