@@ -3,10 +3,16 @@ name: OpenAPI Client Generation and Deploy workflow
 on:
   workflow_call:
     inputs:
+      workflow_id:
+        required: true
+        type: string
       openapi_spec_path:
         required: true
         type: string
-      app_name:
+      generator_config_file:
+        required: true
+        type: string
+      artifact_name:
         required: true
         type: string
       package_name:
@@ -15,71 +21,83 @@ on:
       package_version:
         required: true
         type: string
-    secrets:
-      personal_access_token:
-        required: true
+      # Set to false to build the client without publishing it. Used for variants
+      # that only exist for comparison, and for configs whose pom.xml comes from
+      # the stock templates.
+      deploy:
+        required: false
+        type: boolean
+        default: true
+
+env:
+  generator_version: '7.15.0'
+  # The output location stays here rather than in the generator config: the upload
+  # step below has to know where the generated code landed, so this workflow owns it.
+  output_dir: 'target/generated-client'
 
 jobs:
-  set-variables:
-    runs-on: ubuntu-latest
-    outputs:
-      generator_version: ${{ steps.set-vars.outputs.generator_version }}
-      template_dir: ${{ steps.set-vars.outputs.template_dir }}
-      output_dir: ${{ steps.set-vars.outputs.output_dir }}
-      config_file: ${{ steps.set-vars.outputs.config_file }}
-    steps:
-      - name: Set up workflow variables
-        id: set-vars
-        run: |
-          echo "generator_version=7.15.0" >> $GITHUB_OUTPUT
-          echo "output_dir=target/generated-client" >> $GITHUB_OUTPUT
-          echo "config_file=supporting-files/generator-configs/java-jersey3.yaml" >> $GITHUB_OUTPUT
-          echo "template_dir=supporting-files/generator-templates/java/jersey3" >> $GITHUB_OUTPUT
-
   generate-client:
-    needs: set-variables
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Generate Java Jersey3 client
+        # -w /local makes the container's working directory the checked-out repo
+        # root. Without it the container cwd is /, so relative paths inside the
+        # generator config (templateDir) resolve outside the mount and are lost.
         run: |
-          pwd
-          ls
-          docker run --rm -v "${{ github.workspace }}:/local" \
-            openapitools/openapi-generator-cli:v${{ needs.set-variables.outputs.generator_version }} \
+          docker run --rm -v "${{ github.workspace }}:/local" -w /local \
+            openapitools/openapi-generator-cli:v${{ env.generator_version }} \
             generate \
             -i /local/${{ inputs.openapi_spec_path }} \
-            --template-dir /local/${{ needs.set-variables.outputs.template_dir }} \
-            -c /local/${{ needs.set-variables.outputs.config_file }} \
-            -o /local/${{ needs.set-variables.outputs.output_dir }} \
+            -c /local/${{ inputs.generator_config_file }} \
+            -o /local/${{ env.output_dir }} \
             --invoker-package mb.demos.openapi.generated.api.client.${{ inputs.package_name }}.client \
             --api-package mb.demos.openapi.generated.api.client.${{ inputs.package_name }}.api \
             --model-package mb.demos.openapi.generated.api.client.${{ inputs.package_name }}.model \
-            --additional-properties=artifactId=${{ inputs.app_name }},artifactVersion=${{ inputs.package_version }}
+            --additional-properties=artifactId=${{ inputs.artifact_name }},artifactVersion=${{ inputs.package_version }}
 
       - name: Upload generated client code
         uses: actions/upload-artifact@v4
         with:
-          name: generated-client-code-${{ inputs.app_name }}
-          path: ${{ needs.set-variables.outputs.output_dir }}
+          name: generated-client-code-${{ inputs.workflow_id }}
+          path: ${{ env.output_dir }}
 
   package-and-deploy-client:
     needs: generate-client
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for mvn deploy to push to this repository's GitHub Packages
+      # registry. The caller must grant at least this much.
+      packages: write
     steps:
       - name: Download generated client code
         uses: actions/download-artifact@v4
         with:
-          name: generated-client-code-${{ inputs.app_name }}
+          name: generated-client-code-${{ inputs.workflow_id }}
+      # setup-java writes ~/.m2/settings.xml with a server whose id is `github`
+      # (its default), reading credentials from the GITHUB_ACTOR and GITHUB_TOKEN
+      # environment variables. That id is what -DaltDeploymentRepository targets.
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-        #please note that the deployment configuration is set in the pom.mustache template
-      - name: Deploy artifact to maven repository
+
+      - name: Package client
+        if: ${{ !inputs.deploy }}
+        run: mvn --batch-mode --no-transfer-progress clean package
+
+      - name: Package and deploy client to GitHub Packages
+        if: ${{ inputs.deploy }}
+        # The deploy target is passed here rather than hardcoded in
+        # pom.mustache, so it also works for poms generated from the stock
+        # templates (which have no distributionManagement block).
         run: |
-          mvn clean package deploy -Dusername=${{ github.actor }} -Dpassword=$GITHUB_TOKEN
+          mvn --batch-mode --no-transfer-progress clean deploy \
+            -DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }}
         env:
-          GITHUB_TOKEN: ${{ secrets.personal_access_token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

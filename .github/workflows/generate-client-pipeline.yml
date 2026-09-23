@@ -7,25 +7,80 @@ on:
       - 'feat/**'
   workflow_dispatch:
 
-jobs:
-  generate-petstore-api-client:
-    name: petstore
-    uses: ./.github/workflows/generate-client-workflow.yml
-    with:
-      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
-      app_name: 'petstore'
-      package_name: 'petstore'
-      package_version: '1.0.27'
-    secrets:
-      personal_access_token: ${{ secrets.MB_PAT }}
+# A called workflow's GITHUB_TOKEN can only be equal to or more restrictive than
+# the caller's, so packages:write has to be granted here for publishing to work.
+permissions:
+  contents: read
+  packages: write
 
-  generate-petstore-analyzer-api-client:
-    name: petstore analyzer
+jobs:
+  # without generated mocks
+  generate-petstore-api-client-default-template:
+    name: petstore (default templates)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
+      workflow_id: 'petstore-default'
+      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      artifact_name: 'petstore-default-template'
+      package_name: 'petstore'
+      package_version: '1.0.27-default-${{ github.sha }}'
+
+  generate-petstore-analyzer-api-client-default-template:
+    name: petstore analyzer (default template)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      workflow_id: 'petstore-analyzer-default'
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
-      app_name: 'petstore-analyzer'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      artifact_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
-      package_version: '1.1.1' #todo: retrieve this from yaml file
-    secrets:
-      personal_access_token: ${{ secrets.MB_PAT }}
+      package_version: '1.1.1-default-${{ github.sha }}'
+
+  generate-petstore-analyzer-consumer-api-client-default-template:
+    name: petstore analyzer consumer (default template)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      workflow_id: 'petstore-analyzer-consumer-default'
+      openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      artifact_name: 'petstore-analyzer-consumer'
+      package_name: 'petstore.analyzer.consumer'
+      package_version: '1.1.1-default-${{ github.sha }}'
+
+
+  # with  generated mocks
+  generate-petstore-api-client-with-mock:
+    name: petstore (with mock)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      workflow_id: 'petstore-with-mock'
+      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
+      artifact_name: 'petstore'
+      package_name: 'petstore'
+      package_version: '1.0.27-custom-${{ github.sha }}'
+
+
+  generate-petstore-analyzer-api-client-with-mock:
+    name: petstore analyzer (with mock)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      workflow_id: 'petstore-analyzer-with-mock'
+      openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
+      artifact_name: 'petstore-analyzer'
+      package_name: 'petstore.analyzer'
+      package_version: '1.1.1-custom-${{ github.sha }}'
+
+  generate-petstore-analyzer-consumer-api-client-with-mock:
+    name: petstore analyzer consumer (with mock)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      workflow_id: 'petstore-analyzer-consumer-with-mock'
+      openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      artifact_name: 'petstore-analyzer-consumer'
+      package_name: 'petstore.analyzer.consumer'
+      package_version: '1.1.1-custom-${{ github.sha }}'
+  

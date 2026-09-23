@@ -1,0 +1,91 @@
+openapi: 3.0.1
+info:
+  title: petstore analyzer consumer
+  description: 'An api to demonstrate consuming events, and the difference between unit and integrated tests'
+  version: '1.1.1'
+servers:
+  - url: 'https://localhost:8080'
+    description: 'local'
+paths:
+  /api/process/event:
+    post:
+      tags:
+        - events
+      operationId: processEvent
+      summary: Processes events from suppliers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRequestBody'
+      responses:
+        202:
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAcceptedResponse'
+        400:
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: InternalServerError
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    EventRequestBody:
+      title: EventRequestBody
+      type: object
+      required:
+        - eventType
+        - payload
+      properties:
+        eventType:
+          type: string
+          description: The type of event
+          example: ratio
+        payload:
+          type: object
+    EventAcceptedResponse:
+      title: EventAcceptedResponse
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Unique id of the event
+          example: 2ae36c54-1b54-4090-8e94-4c0dbd6f248a
+        receivedAt:
+          type: string
+          format: date-time
+          description: Timestamp for receiving the event
+          example: 2026-10-21T17:32:28Z
+    ErrorResponse:
+      title: ErrorResponse
+      type: object
+      properties:
+        code:
+          type: number
+          description: Error code
+          example: 2000
+        message:
+          type: string
+          description: Error message
+          example: An error has occurred
+        receivedAt:
+          type: string
+          format: date-time
+          description: Timestamp for receiving the event
+          example: 2026-10-21T17:32:28Z
+
+
+
+
+
