@@ -14,46 +14,67 @@ permissions:
   packages: write
 
 jobs:
-  generate-petstore-api-client:
-    name: petstore
-    uses: ./.github/workflows/generate-client-workflow.yml
-    with:
-      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
-      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
-      app_name: 'petstore'
-      package_name: 'petstore'
-      package_version: '1.0.27-${{ github.sha }}'
-
-  # Same spec as above, but generated with the stock jersey3 templates (no custom
-  # interface/Client split and no mock providers) for comparison. Built but not
-  # published: the stock pom.mustache has no distributionManagement block, and a
-  # comparison artifact has no consumers.
-  generate-petstore-api-client-no-template:
-    name: petstore (stock templates)
+  # without generated mocks
+  generate-petstore-api-client-default-template:
+    name: petstore (default templates)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
-      app_name: 'petstore-no-template'
+      artifact_name: 'petstore-default-template'
       package_name: 'petstore'
-      package_version: '1.0.27-${{ github.sha }}'
+      package_version: '1.0.27-default-${{ github.sha }}'
+  
+  generate-petstore-analyzer-api-client-default-template:
+    name: petstore analyzer (default template)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      artifact_name: 'petstore-analyzer'
+      package_name: 'petstore.analyzer'
+      package_version: '1.1.1-default-${{ github.sha }}'
 
-  generate-petstore-analyzer-consumer-api-client:
-    name: petstore analyzer consumer
+  generate-petstore-analyzer-consumer-api-client-default-template:
+    name: petstore analyzer consumer (default template)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
-      app_name: 'petstore-analyzer-consumer'
-      package_name: 'petstore-analyzer-consumer'
-      package_version: '1.1.1-${{ github.sha }}'
+      artifact_name: 'petstore-analyzer-consumer'
+      package_name: 'petstore.analyzer.consumer'
+      package_version: '1.1.1-default-${{ github.sha }}'
+  
+  
+  # with  generated mocks
+  generate-petstore-api-client-with-mock:
+    name: petstore (with mock)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
+      artifact_name: 'petstore'
+      package_name: 'petstore'
+      package_version: '1.0.27-custom-${{ github.sha }}'
 
-  generate-petstore-analyzer-api-client:
-    name: petstore analyzer
+  
+  generate-petstore-analyzer-api-client-with-mock:
+    name: petstore analyzer (with mock)
     uses: ./.github/workflows/generate-client-workflow.yml
     with:
       openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3.yaml'
-      app_name: 'petstore-analyzer'
+      artifact_name: 'petstore-analyzer'
       package_name: 'petstore.analyzer'
-      package_version: '1.1.1-${{ github.sha }}' #todo: retrieve this from yaml file
+      package_version: '1.1.1-custom-${{ github.sha }}'
+  
+  generate-petstore-analyzer-consumer-api-client-with-mock:
+    name: petstore analyzer consumer (with mock)
+    uses: ./.github/workflows/generate-client-workflow.yml
+    with:
+      openapi_spec_path: 'supporting-files/oas-input/petstore-analyzer-consumer-api.yaml'
+      generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
+      artifact_name: 'petstore-analyzer-consumer'
+      package_name: 'petstore.analyzer.consumer'
+      package_version: '1.1.1-custom-${{ github.sha }}'
+  

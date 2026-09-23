@@ -9,7 +9,7 @@ on:
       generator_config_file:
         required: true
         type: string
-      app_name:
+      artifact_name:
         required: true
         type: string
       package_name:
