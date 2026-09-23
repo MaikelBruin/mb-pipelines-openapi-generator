@@ -54,12 +54,12 @@ jobs:
             --invoker-package mb.demos.openapi.generated.api.client.${{ inputs.package_name }}.client \
             --api-package mb.demos.openapi.generated.api.client.${{ inputs.package_name }}.api \
             --model-package mb.demos.openapi.generated.api.client.${{ inputs.package_name }}.model \
-            --additional-properties=artifactId=${{ inputs.app_name }},artifactVersion=${{ inputs.package_version }}
+            --additional-properties=artifactId=${{ inputs.artifact_name }},artifactVersion=${{ inputs.package_version }}
 
       - name: Upload generated client code
         uses: actions/upload-artifact@v4
         with:
-          name: generated-client-code-${{ inputs.app_name }}
+          name: generated-client-code-${{ inputs.artifact_name }}
           path: ${{ env.output_dir }}
 
   package-and-deploy-client:
@@ -74,7 +74,7 @@ jobs:
       - name: Download generated client code
         uses: actions/download-artifact@v4
         with:
-          name: generated-client-code-${{ inputs.app_name }}
+          name: generated-client-code-${{ inputs.artifact_name }}
       # setup-java writes ~/.m2/settings.xml with a server whose id is `github`
       # (its default), reading credentials from the GITHUB_ACTOR and GITHUB_TOKEN
       # environment variables. That id is what -DaltDeploymentRepository targets.

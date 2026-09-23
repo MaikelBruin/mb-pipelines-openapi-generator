@@ -45,7 +45,7 @@ cd target/generated-client && mvn spotless:apply  # google-java-format AOSP, con
 
 ## Architecture
 
-**Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares one job per API, each calling the reusable `generate-client-workflow.yml` with `openapi_spec_path`, `generator_config_file`, `app_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
+**Pipeline layering** — `.github/workflows/generate-client-pipeline.yml` is the entry point (push to `main`/`feat/**`, or manual dispatch). It declares one job per API, each calling the reusable `generate-client-workflow.yml` with `openapi_spec_path`, `generator_config_file`, `artifact_name` (→ Maven `artifactId`), `package_name` (→ Java package segment) and `package_version` (→ `artifactVersion`).
 
 The reusable workflow has two jobs: `generate-client` (runs `openapitools/openapi-generator-cli` in Docker, uploads the output as an artifact) → `package-and-deploy-client` (downloads the artifact, then `mvn clean deploy`, or just `mvn clean package` when the `deploy` input is `false`). Generator version and output directory are workflow-level `env` values.
 
@@ -53,7 +53,7 @@ The reusable workflow has two jobs: `generate-client` (runs `openapitools/openap
 
 Publishing needs `packages: write` on the `GITHUB_TOKEN`. A called workflow's token can only be equal to or more restrictive than its caller's, so the grant appears in **both** `generate-client-pipeline.yml` (workflow level) and the `package-and-deploy-client` job. Removing either one yields a 401 at deploy time.
 
-`app_name` must be unique per job: it becomes both the Maven `artifactId` and the upload/download artifact name, and `upload-artifact@v4` artifacts are immutable — two jobs uploading the same name in one run fail with a 409 conflict.
+`artifact_name` must be unique per job: it becomes both the Maven `artifactId` and the upload/download artifact name, and `upload-artifact@v4` artifacts are immutable — two jobs uploading the same name in one run fail with a 409 conflict.
 
 **Path ownership is deliberate.** The output directory lives in the workflow (`env.output_dir`, passed as `-o`) because the upload step has to know where the code landed. `templateDir` lives in the *config file* because it must vary per config — that is what distinguishes the two configs, and it cannot be hoisted to a shared CLI flag. Note that `templateDir` in a config is existence-checked inside `CodegenConfigurator.fromFile`, *before* CLI flags are applied, so a bad relative path there is fatal even if `--template-dir` is also passed.
 
@@ -72,7 +72,7 @@ Both petstore variants generate into the *same* Java package, so they are drop-i
 
 - `api_response_examples.mustache` → `{{classname}}ResponseExamples`: a Spring `@Component` that deserialises the response `example` payloads baked into the spec (`examples.0.example` in the mustache model) into typed fields named `{{operationId}}ResponseExample`, plus a `DEFAULT_HEADERS` map. Operations whose response schema carries no example produce nothing usable — examples in the OAS input are what drive mock fidelity.
 - `api_mock.mustache` → `{{classname}}MockProvider`: `Mockito.spy` of the `Client`, with `doReturn(...)` stubs for every `{{operationId}}WithHttpInfo` returning a 200 `ApiResponse` built from the response examples.
-- `api_mock_configuration.mustache` → `{{classname}}MockConfiguration`: Spring `@Configuration` exposing the spy as a `@Primary @Bean` typed as the *interface*. Bean and configuration names are prefixed with the camel-cased `artifactId`, so `app_name` in the pipeline must be unique across APIs sharing a Spring context.
+- `api_mock_configuration.mustache` → `{{classname}}MockConfiguration`: Spring `@Configuration` exposing the spy as a `@Primary @Bean` typed as the *interface*. Bean and configuration names are prefixed with the camel-cased `artifactId`, so `artifact_name` in the pipeline must be unique across APIs sharing a Spring context.
 
 Because these templates emit Mockito, Lombok and `spring-context` usage into `src/main`, `pom.mustache` declares those as **compile-scope** dependencies (see the "custom additions" block) — mocks ship inside the published client jar rather than a test jar.
 
