@@ -22,7 +22,7 @@ jobs:
       workflow_id: 'petstore-default'
       openapi_spec_path: 'supporting-files/oas-input/petstore-api.yaml'
       generator_config_file: 'supporting-files/generator-configs/java-jersey3-no-template.yaml'
-      artifact_name: 'petstore-default-template'
+      artifact_name: 'petstore'
       package_name: 'petstore'
       package_version: '1.0.27-default-${{ github.sha }}'
 
