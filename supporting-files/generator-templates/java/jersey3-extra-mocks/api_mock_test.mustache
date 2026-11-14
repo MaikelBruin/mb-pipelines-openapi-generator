@@ -86,6 +86,23 @@ public class {{classname}}TestMockUtilTest {
         api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
   }
 
+  @Test
+  public void stub{{operationIdCamelCase}}ThrowsStubsBothMethods() throws ApiException {
+    mockUtil.stub{{operationIdCamelCase}}Throws(404, "not found");
+
+    ApiException plain = assertThrows(ApiException.class, () -> api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    ApiException withHttpInfo = assertThrows(ApiException.class, () -> api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    assertEquals(404, plain.getCode());
+    assertEquals("not found", plain.getMessage());
+    assertEquals(404, withHttpInfo.getCode());
+    assertEquals("not found", withHttpInfo.getMessage());
+
+    // back to the default
+    mockUtil.stub{{operationIdCamelCase}}();
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+  }
+
 {{/vendorExtensions.x-group-parameters}}
 {{/operation}}
   @Test

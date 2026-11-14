@@ -18,6 +18,7 @@ import org.mockito.Mockito;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 
 {{#operations}}
 /**
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.doReturn;
  *
  * mockUtil.stubSomeOperation(myResponse);          // own response for this test
  * mockUtil.stubSomeOperation();                    // back to the spec example
+ * mockUtil.stubSomeOperationThrows(404, "not found"); // both methods throw an ApiException
  *
  * doThrow(new ApiException(404, "not found")).when(api).someOperation(any());
  * verify(api).someOperation(eq(42L));              // verify calls as usual
@@ -167,6 +169,15 @@ public class {{classname}}MockUtil {
   }
 
 {{/returnType}}
+  /**
+   * Stubs {@link {{classname}}#{{operationId}}} and {@code {{operationId}}WithHttpInfo} to throw an
+   * {@link ApiException} with the given status code and message, for any arguments.
+   */
+  public {{classname}}MockUtil stub{{operationIdCamelCase}}Throws(int statusCode, String message) {
+    stub{{operationIdCamelCase}}Throws(mock, statusCode, message);
+    return this;
+  }
+
 {{/vendorExtensions.x-group-parameters}}
 {{/operation}}
   /** Creates a mock stubbed with the spec's response examples. */
@@ -214,6 +225,22 @@ public class {{classname}}MockUtil {
           .when(mock).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
     } catch (ApiException e) {
       // Unreachable: doReturn(..).when(mock) never invokes the real method.
+      throw new IllegalStateException(e);
+    }
+  }
+
+  /**
+   * Stubs {@link {{classname}}#{{operationId}}} and {@code {{operationId}}WithHttpInfo} of
+   * {@code mock} (a Mockito mock or spy) to throw an {@link ApiException} with the given status
+   * code and message, for any arguments.
+   */
+  public static void stub{{operationIdCamelCase}}Throws({{classname}} mock, int statusCode, String message) {
+    ApiException exception = new ApiException(statusCode, message);
+    try {
+      doThrow(exception).when(mock).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+      doThrow(exception).when(mock).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    } catch (ApiException e) {
+      // Unreachable: doThrow(..).when(mock) never invokes the real method.
       throw new IllegalStateException(e);
     }
   }
