@@ -1,0 +1,48 @@
+# A YAML configuration file for the OpenAPI Generator CLI.
+# Uses the stock jersey3 templates (a concrete {{classname}} class, exactly as
+# java-jersey3-no-template.yaml generates it) and in addition generates, per API,
+# plain-Mockito mocks stubbed with the spec's response examples:
+#   <Api>MockProvider.java        - Mockito spy of the API, every operation stubbed
+#   <Api>ResponseExamples.java    - typed default responses, read from the .txt below
+#   <Api>ResponseExamples.txt     - the raw example payloads from the spec
+#   <Api>MockProviderTest.java    - checks the stubs (and that the examples parse)
+# The template dir only holds those templates plus pom.mustache (upstream + a
+# compile-scope Mockito dependency, since the mocks ship in the main jar); every
+# other template falls back to the generator's built-in jersey3 set.
+# The output directory is not set here; the caller passes -o.
+generatorName: java
+apiNameSuffix: api
+# Relative to the working directory of the generator, i.e. the repo root.
+templateDir: ./supporting-files/generator-templates/java/jersey3-extra-mocks
+
+
+# Additional properties to pass to the generator.
+additionalProperties:
+  groupId: mb.demos.openapi.generated.api.client
+  asyncNative: false
+  licenseName: OwnedByMaikelBruin
+  licenseUrl: https://openapi-generator.tech/
+  developerName: MaikelBruin
+  developerEmail: maikelbruin@gmail.com
+  developerOrganization: MBTestAutomation
+  developerOrganizationUrl: https://www.linkedin.com/in/maikelbruin/
+  useJakartaEe: true
+  openApiNullable: false
+  serializableModel: true
+  serializationLibrary: jackson
+  library: jersey3
+  dateLibrary: java
+  legacyDiscriminatorBehavior: true
+files:
+  api_mock.mustache:
+    templateType: API
+    destinationFilename: MockProvider.java
+  api_response_examples.mustache:
+    templateType: API
+    destinationFilename: ResponseExamples.java
+  api_response_examples_resource.mustache:
+    templateType: API
+    destinationFilename: ResponseExamples.txt
+  api_mock_test.mustache:
+    templateType: APITests
+    destinationFilename: MockProviderTest.java

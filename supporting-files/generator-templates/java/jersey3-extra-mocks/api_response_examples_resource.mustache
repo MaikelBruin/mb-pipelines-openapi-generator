@@ -1,0 +1,14 @@
+# Response examples for {{#operations}}{{classname}}{{/operations}}, copied verbatim from the OpenAPI spec.
+# Read at runtime by {{#operations}}{{classname}}{{/operations}}ResponseExamples. Generated file - do not edit.
+#
+# Kept out of the Java source on purpose: Java string literals would need the
+# payloads escaped, and mustache cannot do that.
+# Format: a "#### example <operationId> <statusCode> <contentType>" line, then the payload.
+{{#operations}}
+{{#operation}}
+{{#examples}}
+#### example {{operationId}} {{statusCode}} {{contentType}}
+{{{example}}}
+{{/examples}}
+{{/operation}}
+{{/operations}}

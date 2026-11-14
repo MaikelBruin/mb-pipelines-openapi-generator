@@ -1,0 +1,114 @@
+{{>licenseInfo}}
+package {{package}};
+
+import {{invokerPackage}}.ApiClient;
+import {{invokerPackage}}.ApiException;
+import {{invokerPackage}}.ApiResponse;
+
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.mockito.Mockito;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+
+{{#operations}}
+/**
+ * Mockito mock of {@link {{classname}}} that answers every operation with the response example
+ * from the OpenAPI spec (see {@link {{classname}}ResponseExamples}), without any HTTP traffic.
+ *
+ * <p>The mock is a {@link Mockito#spy spy} of a real {@code {{classname}}}. Only the
+ * {@code <operationId>WithHttpInfo} methods are stubbed; the plain {@code <operationId>} methods
+ * run for real and delegate to them. So overriding {@code <operationId>WithHttpInfo} changes
+ * both methods. Stub with {@code doReturn(..).when(mock)...} or {@code doThrow(..)}:
+ * {@code when(mock.op(..))} would call the real method while stubbing.
+ *
+ * <pre>{@code
+ * {{classname}}MockProvider provider = new {{classname}}MockProvider();
+ * {{classname}} api = provider.getMock();          // inject this into the code under test
+ *
+ * // override a default for one test
+ * doThrow(new ApiException(404, "not found")).when(api).someOperationWithHttpInfo(any());
+ *
+ * // verify calls as usual
+ * verify(api).someOperationWithHttpInfo(eq(42L));
+ *
+ * provider.resetToDefaults();                      // back to the spec examples
+ * }</pre>
+ */
+{{>generatedAnnotation}}
+public class {{classname}}MockProvider {
+
+  private final {{classname}}ResponseExamples responseExamples;
+  private final {{classname}} mock;
+
+  /** Creates a mock stubbed with the spec's response examples. */
+  public {{classname}}MockProvider() {
+    this(new {{classname}}ResponseExamples());
+  }
+
+  /** Creates a mock stubbed with the given (possibly modified) response examples. */
+  public {{classname}}MockProvider({{classname}}ResponseExamples responseExamples) {
+    this.responseExamples = responseExamples;
+    this.mock = createMock(responseExamples);
+  }
+
+  /** The mock; pass it to the code under test wherever a {@link {{classname}}} is expected. */
+  public {{classname}} getMock() {
+    return mock;
+  }
+
+  /** The examples the default stubs return. Changes take effect on {@link #resetToDefaults()}. */
+  public {{classname}}ResponseExamples getResponseExamples() {
+    return responseExamples;
+  }
+
+  /** Clears all stubbing and recorded invocations, then reapplies the default stubs. */
+  public {{classname}} resetToDefaults() {
+    resetToDefaults(mock, responseExamples);
+    return mock;
+  }
+
+  /** Creates a mock stubbed with the spec's response examples. */
+  public static {{classname}} createMock() {
+    return createMock(new {{classname}}ResponseExamples());
+  }
+
+  /** Creates a mock stubbed with the given response examples. */
+  public static {{classname}} createMock({{classname}}ResponseExamples responseExamples) {
+    {{classname}} mock = Mockito.spy(new {{classname}}(new ApiClient()));
+    stubDefaults(mock, responseExamples);
+    return mock;
+  }
+
+  /** Clears all stubbing and recorded invocations of {@code mock}, then reapplies the default stubs. */
+  public static void resetToDefaults({{classname}} mock, {{classname}}ResponseExamples responseExamples) {
+    Mockito.reset(mock);
+    stubDefaults(mock, responseExamples);
+  }
+
+  /** Stubs every operation of {@code mock} (a Mockito mock or spy) with the given examples. */
+  public static void stubDefaults({{classname}} mock, {{classname}}ResponseExamples responseExamples) {
+    try {
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+      doReturn(new ApiResponse<{{{returnType}}}{{^returnType}}Void{{/returnType}}>(
+              responseExamples.{{operationId}}ResponseStatus,
+              {{classname}}ResponseExamples.DEFAULT_HEADERS{{#returnType}},
+              responseExamples.{{operationId}}ResponseExample{{/returnType}}))
+          .when(mock).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
+    } catch (ApiException e) {
+      // Unreachable: doReturn(..).when(mock) never invokes the real method.
+      throw new IllegalStateException(e);
+    }
+  }
+}
+{{/operations}}
