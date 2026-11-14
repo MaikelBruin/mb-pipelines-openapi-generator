@@ -410,6 +410,14 @@
             <artifactId>mockito-core</artifactId>
             <version>${mockito-version}</version>
         </dependency>
+        <!-- Only the *MockAutoConfiguration classes use Spring. Optional, so it is not
+             pulled into consumers that do not use Spring; those just never load them. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring-version}</version>
+            <optional>true</optional>
+        </dependency>
         <!-- END custom additions -->
 
         <!-- test dependencies -->
@@ -443,6 +451,7 @@
         <junit-version>5.10.0</junit-version>
         <!-- custom addition -->
         <mockito-version>5.19.0</mockito-version>
+        <spring-version>6.1.11</spring-version>
         {{#hasHttpSignatureMethods}}
         <http-signature-version>1.8</http-signature-version>
         {{/hasHttpSignatureMethods}}

@@ -42,12 +42,20 @@ import static org.mockito.Mockito.doReturn;
  *
  * mockUtil.resetToDefaults();                      // everything back to the spec examples
  * }</pre>
+ *
+ * <p>To use a mock created elsewhere (e.g. {@code @Mock}, {@code Mockito.mock({{classname}}.class)}
+ * or a Spring {@code @MockitoBean}), pass it to the constructor or to {@link #setMock}:
+ *
+ * <pre>{@code
+ * {{classname}}MockUtil mockUtil = new {{classname}}MockUtil(myMock);   // or: mockUtil.setMock(myMock);
+ * }</pre>
  */
 {{>generatedAnnotation}}
+
 public class {{classname}}MockUtil {
 
   private final {{classname}}ResponseExamples responseExamples;
-  private final {{classname}} mock;
+  private {{classname}} mock;
 
   /** Creates a mock stubbed with the spec's response examples. */
   public {{classname}}MockUtil() {
@@ -60,9 +68,60 @@ public class {{classname}}MockUtil {
     this.mock = createMock(responseExamples);
   }
 
+  /**
+   * Uses {@code mock}, created by the caller, and stubs it with the spec's response examples.
+   *
+   * @param mock a Mockito mock or spy of {@link {{classname}}}
+   */
+  public {{classname}}MockUtil({{classname}} mock) {
+    this(mock, new {{classname}}ResponseExamples());
+  }
+
+  /**
+   * Uses {@code mock}, created by the caller, and stubs it with the given response examples.
+   *
+   * @param mock a Mockito mock or spy of {@link {{classname}}}
+   */
+  public {{classname}}MockUtil({{classname}} mock, {{classname}}ResponseExamples responseExamples) {
+    this.responseExamples = responseExamples;
+    setMock(mock);
+  }
+
   /** The mock; pass it to the code under test wherever a {@link {{classname}}} is expected. */
   public {{classname}} getMock() {
     return mock;
+  }
+
+  /**
+   * Uses {@code mock} (created by the caller) from now on, and applies the default stubs to it.
+   * Stubbing done on {@code mock} before this call is overwritten for the stubbed operations;
+   * use {@link #setMock({{classname}}, boolean)} with {@code false} to keep it.
+   *
+   * @param mock a Mockito mock or spy of {@link {{classname}}}
+   * @return this, for chaining
+   */
+  public {{classname}}MockUtil setMock({{classname}} mock) {
+    return setMock(mock, true);
+  }
+
+  /**
+   * Uses {@code mock} (created by the caller) from now on. All {@code stub<OperationId>(..)}
+   * methods and {@link #resetToDefaults()} then act on it.
+   *
+   * @param mock a Mockito mock or spy of {@link {{classname}}}
+   * @param applyDefaultStubs whether to stub every operation with the response examples now
+   * @return this, for chaining
+   * @throws IllegalArgumentException if {@code mock} is null or not a Mockito mock or spy
+   */
+  public {{classname}}MockUtil setMock({{classname}} mock, boolean applyDefaultStubs) {
+    if (mock == null || !Mockito.mockingDetails(mock).isMock()) {
+      throw new IllegalArgumentException("Expected a Mockito mock or spy of {{classname}}, got: " + mock);
+    }
+    this.mock = mock;
+    if (applyDefaultStubs) {
+      stubDefaults(mock, responseExamples);
+    }
+    return this;
   }
 
   /** The examples the default stubs return. Changes take effect on the next stub call or reset. */

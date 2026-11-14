@@ -1,13 +1,15 @@
 # A YAML configuration file for the OpenAPI Generator CLI.
 # Uses the stock jersey3 templates (a concrete {{classname}} class, exactly as
 # java-jersey3-no-template.yaml generates it) and in addition generates, per API,
-# plain-Mockito mocks stubbed with the spec's response examples:
+# Mockito mocks stubbed with the spec's response examples, plus optional Spring wiring:
 #   <Api>MockUtil.java        - Mockito spy of the API, every operation stubbed
+#   <Api>MockAutoConfiguration.java - Spring @Configuration: @Primary mock bean (import it)
 #   <Api>ResponseExamples.java    - typed default responses, read from the .txt below
 #   <Api>ResponseExamples.txt     - the raw example payloads from the spec
 #   <Api>TestMockUtilTest.java - checks the stubs (and that the examples parse)
 # The template dir only holds those templates plus pom.mustache (upstream + a
-# compile-scope Mockito dependency, since the mocks ship in the main jar); every
+# compile-scope Mockito dependency, since the mocks ship in the main jar, and an
+# optional spring-context dependency for the MockAutoConfiguration classes); every
 # other template falls back to the generator's built-in jersey3 set.
 # The output directory is not set here; the caller passes -o.
 generatorName: java
@@ -37,6 +39,9 @@ files:
   api_mock.mustache:
     templateType: API
     destinationFilename: MockUtil.java
+  api_mock_auto_configuration.mustache:
+    templateType: API
+    destinationFilename: MockAutoConfiguration.java
   api_response_examples.mustache:
     templateType: API
     destinationFilename: ResponseExamples.java

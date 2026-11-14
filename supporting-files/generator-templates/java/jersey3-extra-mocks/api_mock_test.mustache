@@ -13,13 +13,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 {{#operations}}
@@ -29,6 +34,7 @@ import static org.mockito.Mockito.verify;
  * does not match its response schema.
  */
 {{>generatedAnnotation}}
+
 // Named <Api>Test + "MockUtilTest": the generator prefixes every test file name with
 // <Api>Test, and the class name has to match the file name.
 public class {{classname}}TestMockUtilTest {
@@ -82,6 +88,55 @@ public class {{classname}}TestMockUtilTest {
 
 {{/vendorExtensions.x-group-parameters}}
 {{/operation}}
+  @Test
+  public void ownMockCanBeSet() throws ApiException {
+    {{classname}} ownMock = mock({{classname}}.class);
+    {{classname}}MockUtil ownMockUtil = new {{classname}}MockUtil().setMock(ownMock);
+    assertSame(ownMock, ownMockUtil.getMock());
+    assertSame(ownMock, new {{classname}}MockUtil(ownMock).getMock());
+    assertThrows(IllegalArgumentException.class, () -> ownMockUtil.setMock(new {{classname}}()));
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+{{#-first}}
+
+    // default stubs were applied to the caller's mock
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        ownMock.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+{{#returnType}}
+    assertEquals(examples.{{operationId}}ResponseExample, ownMock.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/returnType}}
+
+    // setMock(mock, false) keeps the caller's own stubbing
+    {{classname}} untouched = mock({{classname}}.class);
+    doThrow(new ApiException(500, "boom")).when(untouched).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    new {{classname}}MockUtil().setMock(untouched, false);
+    assertThrows(ApiException.class, () -> untouched.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/-first}}
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
+  }
+
+  /** Stands in for the consuming application's configuration that defines the real API bean. */
+  @Configuration
+  static class RealApiConfiguration {
+    @Bean
+    public {{classname}} realApi() {
+      return new {{classname}}();
+    }
+  }
+
+  @Test
+  public void mockAutoConfigurationReplacesApiBean() {
+    try (AnnotationConfigApplicationContext context =
+        new AnnotationConfigApplicationContext(RealApiConfiguration.class, {{classname}}MockAutoConfiguration.class)) {
+      {{classname}} api = context.getBean({{classname}}.class);
+      {{classname}}MockUtil mockUtil = context.getBean({{classname}}MockUtil.class);
+
+      assertSame(mockUtil.getMock(), api);
+      assertTrue(org.mockito.Mockito.mockingDetails(api).isMock());
+    }
+  }
+
   @Test
   public void defaultsCanBeOverriddenAndReset() throws ApiException {
 {{#operation}}
