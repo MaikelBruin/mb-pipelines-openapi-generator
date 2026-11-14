@@ -1,0 +1,196 @@
+{{>licenseInfo}}
+package {{package}};
+
+import {{invokerPackage}}.JSON;
+
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+{{#operations}}
+/**
+ * Typed default responses for {@link {{classname}}}, built from the response {@code example}
+ * payloads in the OpenAPI spec. {@link {{classname}}MockUtil} uses them as its default stubs.
+ *
+ * <p>Each operation has a public, mutable {@code <operationId>ResponseStatus} field. Operations
+ * that return a body also have a {@code <operationId>ResponseExample} field, which is
+ * {@code null} when the spec has no JSON example for a 2xx response. Change the fields before
+ * passing the instance to a {@link {{classname}}MockUtil} to change its defaults.
+ *
+ * <p>The raw payloads are read from the classpath resource {@value #RESOURCE}, generated next
+ * to this class.
+ */
+{{>generatedAnnotation}}
+
+public class {{classname}}ResponseExamples {
+
+  /** Name of the classpath resource (relative to this class) holding the raw spec examples. */
+  public static final String RESOURCE = "{{classname}}ResponseExamples.txt";
+
+  /** Headers returned with every default stubbed response. */
+  public static final Map<String, List<String>> DEFAULT_HEADERS =
+      Collections.singletonMap("Content-Type", Collections.singletonList("application/json"));
+
+{{#operation}}
+{{#returnType}}
+  /** Default body for {@link {{classname}}#{{operationId}}}; {@code null} if the spec has no JSON 2xx example. */
+  public {{{returnType}}} {{operationId}}ResponseExample;
+{{/returnType}}
+  /** Default status code for {@link {{classname}}#{{operationId}}}. */
+  public int {{operationId}}ResponseStatus;
+
+{{/operation}}
+  /** Loads the examples using the generated client's own Jackson configuration. */
+  public {{classname}}ResponseExamples() {
+    this(new JSON().getMapper());
+  }
+
+  /**
+   * Loads the examples with the given mapper.
+   *
+   * @param mapper used to deserialise the JSON example payloads
+   * @throws IllegalStateException if the examples resource is missing or a JSON example does
+   *     not deserialise into the operation's return type
+   */
+  public {{classname}}ResponseExamples(ObjectMapper mapper) {
+    Map<String, List<Example>> examples = loadExamples();
+{{#operation}}
+{{#returnType}}
+    {{operationId}}ResponseExample = read(mapper, examples, "{{operationId}}", new TypeReference<{{{returnType}}}>() {});
+{{/returnType}}
+    {{operationId}}ResponseStatus = status(examples, "{{operationId}}", new String[] { {{#responses}}{{#is2xx}}"{{code}}", {{/is2xx}}{{/responses}}});
+{{/operation}}
+  }
+
+  /** One raw example payload from the spec. */
+  private static final class Example {
+    final String statusCode;
+    final String contentType;
+    final String body;
+
+    Example(String statusCode, String contentType, String body) {
+      this.statusCode = statusCode;
+      this.contentType = contentType;
+      this.body = body;
+    }
+
+    boolean isJsonSuccess() {
+      return statusCode.startsWith("2") && contentType.toLowerCase(Locale.ROOT).contains("json");
+    }
+  }
+
+  private static final String MARKER = "#### example ";
+
+  private static Map<String, List<Example>> loadExamples() {
+    Map<String, List<Example>> result = new HashMap<>();
+    InputStream in = {{classname}}ResponseExamples.class.getResourceAsStream(RESOURCE);
+    if (in == null) {
+      throw new IllegalStateException("Classpath resource " + RESOURCE + " not found next to "
+          + {{classname}}ResponseExamples.class.getName());
+    }
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+      String operationId = null;
+      String statusCode = null;
+      String contentType = null;
+      StringBuilder body = new StringBuilder();
+      String line;
+      while ((line = reader.readLine()) != null) {
+        if (line.startsWith(MARKER)) {
+          add(result, operationId, statusCode, contentType, body);
+          String[] parts = line.substring(MARKER.length()).trim().split(" ", 3);
+          operationId = parts[0];
+          statusCode = parts.length > 1 ? parts[1] : "";
+          contentType = parts.length > 2 ? parts[2] : "";
+          body.setLength(0);
+        } else if (operationId != null) {
+          body.append(line).append('\n');
+        }
+      }
+      add(result, operationId, statusCode, contentType, body);
+    } catch (IOException e) {
+      throw new IllegalStateException("Could not read " + RESOURCE, e);
+    }
+    return result;
+  }
+
+  private static void add(Map<String, List<Example>> result, String operationId,
+      String statusCode, String contentType, StringBuilder body) {
+    if (operationId == null) {
+      return;
+    }
+    List<Example> list = result.get(operationId);
+    if (list == null) {
+      list = new ArrayList<>();
+      result.put(operationId, list);
+    }
+    list.add(new Example(statusCode, contentType, body.toString().trim()));
+  }
+
+  private static Example firstJsonSuccess(Map<String, List<Example>> examples, String operationId) {
+    List<Example> list = examples.get(operationId);
+    if (list != null) {
+      for (Example example : list) {
+        if (example.isJsonSuccess()) {
+          return example;
+        }
+      }
+    }
+    return null;
+  }
+
+  private static <T> T read(ObjectMapper mapper, Map<String, List<Example>> examples,
+      String operationId, TypeReference<T> type) {
+    Example example = firstJsonSuccess(examples, operationId);
+    if (example == null) {
+      return null;
+    }
+    try {
+      return mapper.readValue(example.body, type);
+    } catch (IOException e) {
+      throw new IllegalStateException("The " + example.statusCode + " example of operation '"
+          + operationId + "' in the OpenAPI spec does not match its response schema", e);
+    }
+  }
+
+  /** The status of the JSON 2xx example if there is one, else the first 2xx response code, else 200. */
+  private static int status(Map<String, List<Example>> examples, String operationId, String[] successCodes) {
+    Example example = firstJsonSuccess(examples, operationId);
+    if (example != null) {
+      Integer code = parse(example.statusCode);
+      if (code != null) {
+        return code;
+      }
+    }
+    for (String successCode : successCodes) {
+      Integer code = parse(successCode);
+      if (code != null) {
+        return code;
+      }
+    }
+    return 200;
+  }
+
+  private static Integer parse(String code) {
+    try {
+      return Integer.valueOf(code);
+    } catch (NumberFormatException e) {
+      return null; // e.g. "2XX"
+    }
+  }
+}
+{{/operations}}

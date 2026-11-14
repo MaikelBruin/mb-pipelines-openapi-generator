@@ -1,0 +1,176 @@
+{{>licenseInfo}}
+package {{package}};
+
+import {{invokerPackage}}.ApiException;
+import {{invokerPackage}}.ApiResponse;
+
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+{{#operations}}
+/**
+ * Checks that {@link {{classname}}MockUtil} answers every operation with the spec examples
+ * without any HTTP traffic. Constructing the mock util also fails here if an example in the spec
+ * does not match its response schema.
+ */
+{{>generatedAnnotation}}
+
+// Named <Api>Test + "MockUtilTest": the generator prefixes every test file name with
+// <Api>Test, and the class name has to match the file name.
+public class {{classname}}TestMockUtilTest {
+
+  private final {{classname}}MockUtil mockUtil = new {{classname}}MockUtil();
+  private final {{classname}} api = mockUtil.getMock();
+  private final {{classname}}ResponseExamples examples = mockUtil.getResponseExamples();
+
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+  @Test
+  public void {{operationId}}ReturnsDefaultExample() throws ApiException {
+    ApiResponse<{{{returnType}}}{{^returnType}}Void{{/returnType}}> response = api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}});
+
+    assertEquals(examples.{{operationId}}ResponseStatus, response.getStatusCode());
+{{#returnType}}
+    assertSame(examples.{{operationId}}ResponseExample, response.getData());
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/returnType}}
+{{^returnType}}
+    assertNull(response.getData());
+    api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}});
+{{/returnType}}
+    verify(api).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+  }
+
+  @Test
+  public void stub{{operationIdCamelCase}}StubsBothMethods() throws ApiException {
+{{#returnType}}
+    // own response (null, so it differs from any example): both methods return it
+    mockUtil.stub{{operationIdCamelCase}}(({{{returnType}}}) null);
+    assertNull(api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    assertNull(api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getData());
+
+    // back to the default example: both methods return it again
+    mockUtil.stub{{operationIdCamelCase}}();
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getData());
+{{/returnType}}
+{{^returnType}}
+    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+
+    mockUtil.stub{{operationIdCamelCase}}();
+    api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}});
+    assertNull(api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getData());
+{{/returnType}}
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+  }
+
+  @Test
+  public void stub{{operationIdCamelCase}}ThrowsStubsBothMethods() throws ApiException {
+    mockUtil.stub{{operationIdCamelCase}}Throws(404, "not found");
+
+    ApiException plain = assertThrows(ApiException.class, () -> api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    ApiException withHttpInfo = assertThrows(ApiException.class, () -> api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    assertEquals(404, plain.getCode());
+    assertEquals("not found", plain.getMessage());
+    assertEquals(404, withHttpInfo.getCode());
+    assertEquals("not found", withHttpInfo.getMessage());
+
+    // back to the default
+    mockUtil.stub{{operationIdCamelCase}}();
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+  }
+
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
+  @Test
+  public void ownMockCanBeSet() throws ApiException {
+    {{classname}} ownMock = mock({{classname}}.class);
+    {{classname}}MockUtil ownMockUtil = new {{classname}}MockUtil().setMock(ownMock);
+    assertSame(ownMock, ownMockUtil.getMock());
+    assertSame(ownMock, new {{classname}}MockUtil(ownMock).getMock());
+    assertThrows(IllegalArgumentException.class, () -> ownMockUtil.setMock(new {{classname}}()));
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+{{#-first}}
+
+    // default stubs were applied to the caller's mock
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        ownMock.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+{{#returnType}}
+    assertEquals(examples.{{operationId}}ResponseExample, ownMock.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/returnType}}
+
+    // setMock(mock, false) keeps the caller's own stubbing
+    {{classname}} untouched = mock({{classname}}.class);
+    doThrow(new ApiException(500, "boom")).when(untouched).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    new {{classname}}MockUtil().setMock(untouched, false);
+    assertThrows(ApiException.class, () -> untouched.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/-first}}
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
+  }
+
+  /** Stands in for the consuming application's configuration that defines the real API bean. */
+  @Configuration
+  static class RealApiConfiguration {
+    @Bean
+    public {{classname}} realApi() {
+      return new {{classname}}();
+    }
+  }
+
+  @Test
+  public void mockAutoConfigurationReplacesApiBean() {
+    try (AnnotationConfigApplicationContext context =
+        new AnnotationConfigApplicationContext(RealApiConfiguration.class, {{classname}}MockAutoConfiguration.class)) {
+      {{classname}} api = context.getBean({{classname}}.class);
+      {{classname}}MockUtil mockUtil = context.getBean({{classname}}MockUtil.class);
+
+      assertSame(mockUtil.getMock(), api);
+      assertTrue(org.mockito.Mockito.mockingDetails(api).isMock());
+    }
+  }
+
+  @Test
+  public void defaultsCanBeOverriddenAndReset() throws ApiException {
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+{{#-first}}
+    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    assertThrows(ApiException.class, () -> api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+
+    mockUtil.resetToDefaults();
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+{{#returnType}}
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/returnType}}
+{{/-first}}
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
+  }
+}
+{{/operations}}

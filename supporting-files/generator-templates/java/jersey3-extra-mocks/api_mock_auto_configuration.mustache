@@ -1,0 +1,55 @@
+{{>licenseInfo}}
+package {{package}};
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+{{#operations}}
+/**
+ * Spring configuration that replaces the {@link {{classname}}} bean with its mock from
+ * {@link {{classname}}MockUtil}, stubbed with the spec's response examples.
+ *
+ * <p>The mock is registered as a {@link Primary @Primary} bean, so it wins over a real
+ * {@code {{classname}}} bean wherever a {@code {{classname}}} is injected. The {@link {{classname}}MockUtil}
+ * is a bean too: autowire it in a test to change the stubs, e.g. {@code mockUtil.stub<OperationId>(..)}.
+ *
+ * <p>This class is deliberately <b>not</b> registered for Spring Boot auto-configuration. If it were,
+ * having the client jar on a production classpath would replace the real API. Import it explicitly
+ * where you want the mock, typically in tests:
+ *
+ * <pre>
+ * &#64;SpringBootTest
+ * &#64;Import({{classname}}MockAutoConfiguration.class)
+ * class MyServiceTest {
+ *   &#64;Autowired {{classname}}MockUtil mockUtil;
+ *
+ *   &#64;BeforeEach
+ *   void resetMock() {
+ *     mockUtil.resetToDefaults();   // the beans are shared by every test using this context
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>Bean names are prefixed with the camel-cased artifactId ({@code {{#lambda.camelcase}}{{artifactId}}{{/lambda.camelcase}}}),
+ * so the mocks of different clients can share one Spring context.
+ */
+{{>generatedAnnotation}}
+
+@Configuration("{{#lambda.camelcase}}{{artifactId}}{{/lambda.camelcase}}{{classname}}MockAutoConfiguration")
+public class {{classname}}MockAutoConfiguration {
+
+  /** The mock util: use it to change stubs or to reset the mock between tests. */
+  @Bean("{{#lambda.camelcase}}{{artifactId}}{{/lambda.camelcase}}{{classname}}MockUtil")
+  public {{classname}}MockUtil {{#lambda.camelcase}}{{classname}}{{/lambda.camelcase}}MockUtil() {
+    return new {{classname}}MockUtil();
+  }
+
+  /** The mock, replacing any real {@link {{classname}}} bean. */
+  @Primary
+  @Bean("{{#lambda.camelcase}}{{artifactId}}{{/lambda.camelcase}}{{classname}}Mock")
+  public {{classname}} {{#lambda.camelcase}}{{classname}}{{/lambda.camelcase}}Mock({{classname}}MockUtil {{#lambda.camelcase}}{{classname}}{{/lambda.camelcase}}MockUtil) {
+    return {{#lambda.camelcase}}{{classname}}{{/lambda.camelcase}}MockUtil.getMock();
+  }
+}
+{{/operations}}

@@ -2,3 +2,4 @@
 /openapi-generator-cli-7.15.0.jar
 /generated-client/
 /target/
+.claude/tasks/generate-mocks.md
