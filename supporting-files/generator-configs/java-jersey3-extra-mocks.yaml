@@ -2,10 +2,10 @@
 # Uses the stock jersey3 templates (a concrete {{classname}} class, exactly as
 # java-jersey3-no-template.yaml generates it) and in addition generates, per API,
 # plain-Mockito mocks stubbed with the spec's response examples:
-#   <Api>MockProvider.java        - Mockito spy of the API, every operation stubbed
+#   <Api>MockUtil.java        - Mockito spy of the API, every operation stubbed
 #   <Api>ResponseExamples.java    - typed default responses, read from the .txt below
 #   <Api>ResponseExamples.txt     - the raw example payloads from the spec
-#   <Api>MockProviderTest.java    - checks the stubs (and that the examples parse)
+#   <Api>TestMockUtilTest.java - checks the stubs (and that the examples parse)
 # The template dir only holds those templates plus pom.mustache (upstream + a
 # compile-scope Mockito dependency, since the mocks ship in the main jar); every
 # other template falls back to the generator's built-in jersey3 set.
@@ -36,7 +36,7 @@ additionalProperties:
 files:
   api_mock.mustache:
     templateType: API
-    destinationFilename: MockProvider.java
+    destinationFilename: MockUtil.java
   api_response_examples.mustache:
     templateType: API
     destinationFilename: ResponseExamples.java
@@ -45,4 +45,4 @@ files:
     destinationFilename: ResponseExamples.txt
   api_mock_test.mustache:
     templateType: APITests
-    destinationFilename: MockProviderTest.java
+    destinationFilename: MockUtilTest.java

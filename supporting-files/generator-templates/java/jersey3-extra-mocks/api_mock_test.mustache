@@ -24,18 +24,18 @@ import static org.mockito.Mockito.verify;
 
 {{#operations}}
 /**
- * Checks that {@link {{classname}}MockProvider} answers every operation with the spec examples
- * without any HTTP traffic. Constructing the provider also fails here if an example in the spec
+ * Checks that {@link {{classname}}MockUtil} answers every operation with the spec examples
+ * without any HTTP traffic. Constructing the mock util also fails here if an example in the spec
  * does not match its response schema.
  */
 {{>generatedAnnotation}}
-// Named <Api>Test + "MockProviderTest": the generator prefixes every test file name with
+// Named <Api>Test + "MockUtilTest": the generator prefixes every test file name with
 // <Api>Test, and the class name has to match the file name.
-public class {{classname}}TestMockProviderTest {
+public class {{classname}}TestMockUtilTest {
 
-  private final {{classname}}MockProvider provider = new {{classname}}MockProvider();
-  private final {{classname}} api = provider.getMock();
-  private final {{classname}}ResponseExamples examples = provider.getResponseExamples();
+  private final {{classname}}MockUtil mockUtil = new {{classname}}MockUtil();
+  private final {{classname}} api = mockUtil.getMock();
+  private final {{classname}}ResponseExamples examples = mockUtil.getResponseExamples();
 
 {{#operation}}
 {{^vendorExtensions.x-group-parameters}}
@@ -55,6 +55,31 @@ public class {{classname}}TestMockProviderTest {
     verify(api).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
   }
 
+  @Test
+  public void stub{{operationIdCamelCase}}StubsBothMethods() throws ApiException {
+{{#returnType}}
+    // own response (null, so it differs from any example): both methods return it
+    mockUtil.stub{{operationIdCamelCase}}(({{{returnType}}}) null);
+    assertNull(api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    assertNull(api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getData());
+
+    // back to the default example: both methods return it again
+    mockUtil.stub{{operationIdCamelCase}}();
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getData());
+{{/returnType}}
+{{^returnType}}
+    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+
+    mockUtil.stub{{operationIdCamelCase}}();
+    api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}});
+    assertNull(api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getData());
+{{/returnType}}
+    assertEquals(examples.{{operationId}}ResponseStatus,
+        api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+  }
+
 {{/vendorExtensions.x-group-parameters}}
 {{/operation}}
   @Test
@@ -62,12 +87,15 @@ public class {{classname}}TestMockProviderTest {
 {{#operation}}
 {{^vendorExtensions.x-group-parameters}}
 {{#-first}}
-    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    doThrow(new ApiException(500, "boom")).when(api).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
     assertThrows(ApiException.class, () -> api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
 
-    provider.resetToDefaults();
+    mockUtil.resetToDefaults();
     assertEquals(examples.{{operationId}}ResponseStatus,
         api.{{operationId}}WithHttpInfo({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}).getStatusCode());
+{{#returnType}}
+    assertSame(examples.{{operationId}}ResponseExample, api.{{operationId}}({{#allParams}}null{{^-last}}, {{/-last}}{{/allParams}}));
+{{/returnType}}
 {{/-first}}
 {{/vendorExtensions.x-group-parameters}}
 {{/operation}}

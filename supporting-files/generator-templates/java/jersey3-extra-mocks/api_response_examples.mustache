@@ -25,12 +25,12 @@ import java.util.Map;
 {{#operations}}
 /**
  * Typed default responses for {@link {{classname}}}, built from the response {@code example}
- * payloads in the OpenAPI spec. {@link {{classname}}MockProvider} uses them as its default stubs.
+ * payloads in the OpenAPI spec. {@link {{classname}}MockUtil} uses them as its default stubs.
  *
  * <p>Each operation has a public, mutable {@code <operationId>ResponseStatus} field. Operations
  * that return a body also have a {@code <operationId>ResponseExample} field, which is
  * {@code null} when the spec has no JSON example for a 2xx response. Change the fields before
- * passing the instance to a {@link {{classname}}MockProvider} to change its defaults.
+ * passing the instance to a {@link {{classname}}MockUtil} to change its defaults.
  *
  * <p>The raw payloads are read from the classpath resource {@value #RESOURCE}, generated next
  * to this class.

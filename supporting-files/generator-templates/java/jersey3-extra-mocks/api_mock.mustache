@@ -16,6 +16,7 @@ import java.util.Set;
 import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 
 {{#operations}}
@@ -23,38 +24,38 @@ import static org.mockito.Mockito.doReturn;
  * Mockito mock of {@link {{classname}}} that answers every operation with the response example
  * from the OpenAPI spec (see {@link {{classname}}ResponseExamples}), without any HTTP traffic.
  *
- * <p>The mock is a {@link Mockito#spy spy} of a real {@code {{classname}}}. Only the
- * {@code <operationId>WithHttpInfo} methods are stubbed; the plain {@code <operationId>} methods
- * run for real and delegate to them. So overriding {@code <operationId>WithHttpInfo} changes
- * both methods. Stub with {@code doReturn(..).when(mock)...} or {@code doThrow(..)}:
- * {@code when(mock.op(..))} would call the real method while stubbing.
+ * <p>For every operation both the plain {@code <operationId>} method and
+ * {@code <operationId>WithHttpInfo} are stubbed, with any arguments. Use the
+ * {@code stub<OperationId>(..)} methods to change a stub: they always stub both methods together,
+ * so the two stay consistent. Plain Mockito stubbing ({@code doReturn}, {@code doThrow},
+ * {@code when}) works too, but only affects the method you stub.
  *
  * <pre>{@code
- * {{classname}}MockProvider provider = new {{classname}}MockProvider();
- * {{classname}} api = provider.getMock();          // inject this into the code under test
+ * {{classname}}MockUtil mockUtil = new {{classname}}MockUtil();
+ * {{classname}} api = mockUtil.getMock();          // inject this into the code under test
  *
- * // override a default for one test
- * doThrow(new ApiException(404, "not found")).when(api).someOperationWithHttpInfo(any());
+ * mockUtil.stubSomeOperation(myResponse);          // own response for this test
+ * mockUtil.stubSomeOperation();                    // back to the spec example
  *
- * // verify calls as usual
- * verify(api).someOperationWithHttpInfo(eq(42L));
+ * doThrow(new ApiException(404, "not found")).when(api).someOperation(any());
+ * verify(api).someOperation(eq(42L));              // verify calls as usual
  *
- * provider.resetToDefaults();                      // back to the spec examples
+ * mockUtil.resetToDefaults();                      // everything back to the spec examples
  * }</pre>
  */
 {{>generatedAnnotation}}
-public class {{classname}}MockProvider {
+public class {{classname}}MockUtil {
 
   private final {{classname}}ResponseExamples responseExamples;
   private final {{classname}} mock;
 
   /** Creates a mock stubbed with the spec's response examples. */
-  public {{classname}}MockProvider() {
+  public {{classname}}MockUtil() {
     this(new {{classname}}ResponseExamples());
   }
 
   /** Creates a mock stubbed with the given (possibly modified) response examples. */
-  public {{classname}}MockProvider({{classname}}ResponseExamples responseExamples) {
+  public {{classname}}MockUtil({{classname}}ResponseExamples responseExamples) {
     this.responseExamples = responseExamples;
     this.mock = createMock(responseExamples);
   }
@@ -64,7 +65,7 @@ public class {{classname}}MockProvider {
     return mock;
   }
 
-  /** The examples the default stubs return. Changes take effect on {@link #resetToDefaults()}. */
+  /** The examples the default stubs return. Changes take effect on the next stub call or reset. */
   public {{classname}}ResponseExamples getResponseExamples() {
     return responseExamples;
   }
@@ -75,6 +76,40 @@ public class {{classname}}MockProvider {
     return mock;
   }
 
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+{{#returnType}}
+  /**
+   * Stubs {@link {{classname}}#{{operationId}}} and {@code {{operationId}}WithHttpInfo} to return
+   * the spec example ({@link {{classname}}ResponseExamples#{{operationId}}ResponseExample}).
+   */
+  public {{classname}}MockUtil stub{{operationIdCamelCase}}() {
+    return stub{{operationIdCamelCase}}(responseExamples.{{operationId}}ResponseExample);
+  }
+
+  /**
+   * Stubs {@link {{classname}}#{{operationId}}} and {@code {{operationId}}WithHttpInfo} to return
+   * {@code response}, with the example's status code.
+   */
+  public {{classname}}MockUtil stub{{operationIdCamelCase}}({{{returnType}}} response) {
+    stub{{operationIdCamelCase}}(mock, response, responseExamples.{{operationId}}ResponseStatus);
+    return this;
+  }
+
+{{/returnType}}
+{{^returnType}}
+  /**
+   * Stubs {@link {{classname}}#{{operationId}}} to do nothing and {@code {{operationId}}WithHttpInfo}
+   * to return an empty response with the default status code.
+   */
+  public {{classname}}MockUtil stub{{operationIdCamelCase}}() {
+    stub{{operationIdCamelCase}}(mock, responseExamples.{{operationId}}ResponseStatus);
+    return this;
+  }
+
+{{/returnType}}
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
   /** Creates a mock stubbed with the spec's response examples. */
   public static {{classname}} createMock() {
     return createMock(new {{classname}}ResponseExamples());
@@ -95,20 +130,36 @@ public class {{classname}}MockProvider {
 
   /** Stubs every operation of {@code mock} (a Mockito mock or spy) with the given examples. */
   public static void stubDefaults({{classname}} mock, {{classname}}ResponseExamples responseExamples) {
-    try {
 {{#operation}}
 {{^vendorExtensions.x-group-parameters}}
-      doReturn(new ApiResponse<{{{returnType}}}{{^returnType}}Void{{/returnType}}>(
-              responseExamples.{{operationId}}ResponseStatus,
-              {{classname}}ResponseExamples.DEFAULT_HEADERS{{#returnType}},
-              responseExamples.{{operationId}}ResponseExample{{/returnType}}))
-          .when(mock).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+    stub{{operationIdCamelCase}}(mock, {{#returnType}}responseExamples.{{operationId}}ResponseExample, {{/returnType}}responseExamples.{{operationId}}ResponseStatus);
 {{/vendorExtensions.x-group-parameters}}
 {{/operation}}
+  }
+
+{{#operation}}
+{{^vendorExtensions.x-group-parameters}}
+  /**
+   * Stubs {@link {{classname}}#{{operationId}}} and {@code {{operationId}}WithHttpInfo} of
+   * {@code mock} (a Mockito mock or spy), for any arguments.
+   */
+  public static void stub{{operationIdCamelCase}}({{classname}} mock, {{#returnType}}{{{returnType}}} response, {{/returnType}}int statusCode) {
+    try {
+{{#returnType}}
+      doReturn(response).when(mock).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+{{/returnType}}
+{{^returnType}}
+      doNothing().when(mock).{{operationId}}({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
+{{/returnType}}
+      doReturn(new ApiResponse<{{{returnType}}}{{^returnType}}Void{{/returnType}}>(statusCode, {{classname}}ResponseExamples.DEFAULT_HEADERS{{#returnType}}, response{{/returnType}}))
+          .when(mock).{{operationId}}WithHttpInfo({{#allParams}}any(){{^-last}}, {{/-last}}{{/allParams}});
     } catch (ApiException e) {
       // Unreachable: doReturn(..).when(mock) never invokes the real method.
       throw new IllegalStateException(e);
     }
   }
+
+{{/vendorExtensions.x-group-parameters}}
+{{/operation}}
 }
 {{/operations}}
